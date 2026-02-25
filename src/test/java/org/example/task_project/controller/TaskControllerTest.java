@@ -79,9 +79,9 @@ class TaskControllerTest {
         @Test
         void updateTaskStatus_shouldReturn200() {
                 TaskDto dto = TaskDto.builder().id(1L).statut(TaskStatus.DONE).build();
-                when(taskService.updateTaskStatus(1L, TaskStatus.DONE)).thenReturn(dto);
+                when(taskService.updateTaskStatus(eq(1L), eq(TaskStatus.DONE), any(), anyBoolean())).thenReturn(dto);
 
-                ResponseEntity<TaskDto> response = taskController.updateTaskStatus(1L, TaskStatus.DONE);
+                ResponseEntity<TaskDto> response = taskController.updateTaskStatus(1L, TaskStatus.DONE, null);
 
                 assertEquals(TaskStatus.DONE, response.getBody().getStatut());
         }

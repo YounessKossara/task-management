@@ -56,11 +56,13 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{keycloakId}/identity-doc")
+    @PostMapping(value = "/{keycloakId}/identity-doc", consumes = "multipart/form-data")
     @PreAuthorize("hasRole('ADMIN') or #keycloakId == authentication.name")
     public ResponseEntity<String> uploadIdentityDoc(@PathVariable String keycloakId,
             @RequestParam("file") MultipartFile file) {
         String url = fileStorageService.uploadFile(keycloakId, file.getOriginalFilename(), file);
+        // Sauvegarder l'URL dans PostgreSQL
+        keycloakUserService.updateIdentityDocUrl(keycloakId, url);
         return ResponseEntity.ok(url);
     }
 }

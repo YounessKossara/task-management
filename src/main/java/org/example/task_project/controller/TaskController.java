@@ -5,6 +5,8 @@ import org.example.task_project.enums.TaskStatus;
 import org.example.task_project.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -46,8 +48,13 @@ public class TaskController {
     @PatchMapping("/tasks/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<TaskDto> updateTaskStatus(@PathVariable Long id,
-            @RequestParam TaskStatus statut) {
-        return ResponseEntity.ok(taskService.updateTaskStatus(id, statut));
+            @RequestParam TaskStatus statut,
+            Authentication authentication) {
+        String currentUserId = authentication != null ? authentication.getName() : null;
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(taskService.updateTaskStatus(id, statut, currentUserId, isAdmin));
     }
 
     @DeleteMapping("/tasks/{id}")

@@ -74,9 +74,22 @@ public class TaskService {
         return taskMapper.toDto(saved);
     }
 
-    public TaskDto updateTaskStatus(Long id, TaskStatus newStatus) {
+    public TaskDto updateTaskStatus(Long id, TaskStatus newStatus, String currentUserId, boolean isAdmin) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+
+        // Vérifier l'autorisation : ADMIN, responsable du projet, ou assigné à la tâche
+        if (!isAdmin) {
+            String assignee = task.getAssigneeKeycloakId();
+            String responsable = task.getProject().getResponsableKeycloakId();
+            boolean isAssignee = currentUserId != null && currentUserId.equals(assignee);
+            boolean isResponsable = currentUserId != null && currentUserId.equals(responsable);
+
+            if (!isAssignee && !isResponsable) {
+                throw new RuntimeException(
+                        "Accès refusé : vous n'êtes ni assigné à cette tâche, ni responsable du projet");
+            }
+        }
 
         task.setStatut(newStatus);
         task.setUpdatedAt(LocalDateTime.now());

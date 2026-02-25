@@ -23,6 +23,7 @@ public class User {
     private LocalDate dateNaissance;
     private String email;
     private String telephone;
+    @Column(length = 1024)
     private String identityDocUrl;
     private String role;
     private LocalDateTime createdAt;

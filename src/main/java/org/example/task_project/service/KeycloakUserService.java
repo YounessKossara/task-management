@@ -123,4 +123,12 @@ public class KeycloakUserService {
         // 2. Supprimer en local
         userRepository.deleteById(keycloakId);
     }
+
+    public void updateIdentityDocUrl(String keycloakId, String url) {
+        User user = userRepository.findById(keycloakId)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId));
+        user.setIdentityDocUrl(url);
+        user.setUpdatedAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
+    }
 }

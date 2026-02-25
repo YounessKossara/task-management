@@ -117,8 +117,8 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(updated);
         when(taskMapper.toDto(updated)).thenReturn(dto);
 
-        // When
-        TaskDto result = taskService.updateTaskStatus(1L, TaskStatus.DONE);
+        // When — isAdmin=true pour bypass la vérification d'autorisation
+        TaskDto result = taskService.updateTaskStatus(1L, TaskStatus.DONE, "admin-id", true);
 
         // Then
         assertEquals(TaskStatus.DONE, result.getStatut());
