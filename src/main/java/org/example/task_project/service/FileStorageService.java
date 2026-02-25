@@ -9,20 +9,20 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FileStorageService {
 
-    private final MinioClient minioClient;
+    private final MinioClient storageClient;
 
-    @Value("${minio.bucket-name}")
+    @Value("${rustfs.bucket-name}")
     private String bucketName;
 
-    public FileStorageService(MinioClient minioClient) {
-        this.minioClient = minioClient;
+    public FileStorageService(MinioClient storageClient) {
+        this.storageClient = storageClient;
     }
 
     public String uploadFile(String folder, String fileName, MultipartFile file) {
         try {
             String objectName = folder + "/" + fileName;
 
-            minioClient.putObject(
+            storageClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
@@ -38,7 +38,7 @@ public class FileStorageService {
 
     public String getFileUrl(String objectName) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return storageClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
@@ -52,7 +52,7 @@ public class FileStorageService {
 
     public void deleteFile(String objectName) {
         try {
-            minioClient.removeObject(
+            storageClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)

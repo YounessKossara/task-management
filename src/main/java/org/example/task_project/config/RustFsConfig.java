@@ -6,19 +6,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MinioConfig {
+public class RustFsConfig {
 
-    @Value("${minio.url}")
+    @Value("${rustfs.url}")
     private String url;
 
-    @Value("${minio.access-key}")
+    @Value("${rustfs.access-key}")
     private String accessKey;
 
-    @Value("${minio.secret-key}")
+    @Value("${rustfs.secret-key}")
     private String secretKey;
 
     @Bean
-    public MinioClient minioClient() {
+    public MinioClient storageClient() {
+        // Le SDK MinIO est compatible S3 — il communique avec RustFS via le protocole
+        // S3
         return MinioClient.builder()
                 .endpoint(url)
                 .credentials(accessKey, secretKey)

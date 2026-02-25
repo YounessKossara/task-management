@@ -116,6 +116,12 @@
             <version>${springdoc.version}</version>
         </dependency>
 
+        <!-- Kotlin Reflect — requis par le SDK MinIO pour Swagger -->
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
+        </dependency>
+
         <!-- ══════════════════════════════════════ -->
         <!--           UTILITAIRES                 -->
         <!-- ══════════════════════════════════════ -->
