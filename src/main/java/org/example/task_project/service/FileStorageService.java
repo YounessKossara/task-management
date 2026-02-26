@@ -2,6 +2,7 @@ package org.example.task_project.service;
 
 import io.minio.*;
 import io.minio.http.Method;
+import org.example.task_project.exception.FileStorageException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +33,7 @@ public class FileStorageService {
 
             return getFileUrl(objectName);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de l'upload du fichier: " + e.getMessage());
+            throw new FileStorageException("Erreur lors de l'upload du fichier: " + e.getMessage(), e);
         }
     }
 
@@ -46,7 +47,7 @@ public class FileStorageService {
                             .expiry(60 * 60 * 24) // URL valide 24h
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la génération de l'URL: " + e.getMessage());
+            throw new FileStorageException("Erreur lors de la génération de l'URL: " + e.getMessage(), e);
         }
     }
 
@@ -58,7 +59,7 @@ public class FileStorageService {
                             .object(objectName)
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la suppression du fichier: " + e.getMessage());
+            throw new FileStorageException("Erreur lors de la suppression du fichier: " + e.getMessage(), e);
         }
     }
 }

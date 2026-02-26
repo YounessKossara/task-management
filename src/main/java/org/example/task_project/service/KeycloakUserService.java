@@ -2,6 +2,7 @@ package org.example.task_project.service;
 
 import org.example.task_project.dto.UserDto;
 import org.example.task_project.entity.User;
+import org.example.task_project.exception.KeycloakException;
 import org.example.task_project.exception.ResourceNotFoundException;
 import org.example.task_project.mapper.UserMapper;
 import org.example.task_project.repository.UserRepository;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class KeycloakUserService {
@@ -42,7 +42,7 @@ public class KeycloakUserService {
         return userRepository.findAll()
                 .stream()
                 .map(userMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public UserDto getUserById(String keycloakId) {
@@ -67,25 +67,26 @@ public class KeycloakUserService {
         credential.setTemporary(false);
         keycloakUser.setCredentials(Collections.singletonList(credential));
 
-        Response response = getUsersResource().create(keycloakUser);
+        try (Response response = getUsersResource().create(keycloakUser)) {
 
-        if (response.getStatus() != 201) {
-            throw new RuntimeException("Erreur Keycloak: " + response.getStatusInfo().getReasonPhrase());
+            if (response.getStatus() != 201) {
+                throw new KeycloakException("Erreur Keycloak: " + response.getStatusInfo().getReasonPhrase());
+            }
+
+            // 2. Récupérer l'ID Keycloak généré
+            String keycloakId = response.getLocation().getPath()
+                    .replaceAll(".*/([^/]+)$", "$1");
+
+            // 3. Sauvegarder en local
+            User user = userMapper.toEntity(userDto);
+            user.setKeycloakId(keycloakId);
+            user.setCreatedAt(java.time.LocalDateTime.now());
+            user.setUpdatedAt(java.time.LocalDateTime.now());
+            userRepository.save(user);
+
+            userDto.setKeycloakId(keycloakId);
+            return userDto;
         }
-
-        // 2. Récupérer l'ID Keycloak généré
-        String keycloakId = response.getLocation().getPath()
-                .replaceAll(".*/([^/]+)$", "$1");
-
-        // 3. Sauvegarder en local
-        User user = userMapper.toEntity(userDto);
-        user.setKeycloakId(keycloakId);
-        user.setCreatedAt(java.time.LocalDateTime.now());
-        user.setUpdatedAt(java.time.LocalDateTime.now());
-        userRepository.save(user);
-
-        userDto.setKeycloakId(keycloakId);
-        return userDto;
     }
 
     public UserDto updateUser(String keycloakId, UserDto userDto) {

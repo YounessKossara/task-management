@@ -4,6 +4,7 @@ import org.example.task_project.dto.TaskDto;
 import org.example.task_project.entity.Project;
 import org.example.task_project.entity.Task;
 import org.example.task_project.enums.TaskStatus;
+import org.example.task_project.exception.AccessDeniedException;
 import org.example.task_project.exception.ResourceNotFoundException;
 import org.example.task_project.mapper.TaskMapper;
 import org.example.task_project.repository.ProjectRepository;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
@@ -42,7 +42,7 @@ public class TaskService {
 
         return tasks.stream()
                 .map(taskMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public TaskDto createTask(Long projectId, TaskDto taskDto) {
@@ -86,7 +86,7 @@ public class TaskService {
             boolean isResponsable = currentUserId != null && currentUserId.equals(responsable);
 
             if (!isAssignee && !isResponsable) {
-                throw new RuntimeException(
+                throw new AccessDeniedException(
                         "Accès refusé : vous n'êtes ni assigné à cette tâche, ni responsable du projet");
             }
         }

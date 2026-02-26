@@ -68,6 +68,16 @@ services:
         exit 0
       "
     restart: "no"
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: taskmanager-sonarqube
+    ports:
+      - "9090:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+
 
 volumes:
   postgres_data:
@@ -76,3 +86,5 @@ volumes:
   rustfs_data_2:
   rustfs_data_3:
   rustfs_logs:
+  sonarqube_data:
+

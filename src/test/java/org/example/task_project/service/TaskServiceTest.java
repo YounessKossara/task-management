@@ -132,4 +132,88 @@ class TaskServiceTest {
             taskService.deleteTask(999L);
         });
     }
+
+    @Test
+    void updateTaskStatus_shouldDeny_whenNotAuthorized() {
+        // Given — user is not admin, not assignee, not responsible
+        Project project = Project.builder().id(1L).responsableKeycloakId("resp-id").build();
+        Task task = Task.builder().id(1L).titre("Tâche").statut(TaskStatus.TODO)
+                .project(project).assigneeKeycloakId("other-user").build();
+
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        // When & Then
+        assertThrows(RuntimeException.class, () -> {
+            taskService.updateTaskStatus(1L, TaskStatus.DONE, "random-user", false);
+        });
+    }
+
+    @Test
+    void updateTaskStatus_shouldAllow_whenAssignee() {
+        // Given
+        Project project = Project.builder().id(1L).responsableKeycloakId("resp-id").build();
+        Task task = Task.builder().id(1L).titre("Tâche").statut(TaskStatus.TODO)
+                .project(project).assigneeKeycloakId("assignee-id").build();
+        Task updated = Task.builder().id(1L).titre("Tâche").statut(TaskStatus.DONE).build();
+        TaskDto dto = TaskDto.builder().id(1L).statut(TaskStatus.DONE).build();
+
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(updated);
+        when(taskMapper.toDto(updated)).thenReturn(dto);
+
+        // When — l'assigné peut modifier le statut
+        TaskDto result = taskService.updateTaskStatus(1L, TaskStatus.DONE, "assignee-id", false);
+
+        // Then
+        assertEquals(TaskStatus.DONE, result.getStatut());
+    }
+
+    @Test
+    void updateTaskStatus_shouldAllow_whenResponsable() {
+        // Given
+        Project project = Project.builder().id(1L).responsableKeycloakId("resp-id").build();
+        Task task = Task.builder().id(1L).titre("Tâche").statut(TaskStatus.TODO)
+                .project(project).assigneeKeycloakId("other").build();
+        Task updated = Task.builder().id(1L).titre("Tâche").statut(TaskStatus.DONE).build();
+        TaskDto dto = TaskDto.builder().id(1L).statut(TaskStatus.DONE).build();
+
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(updated);
+        when(taskMapper.toDto(updated)).thenReturn(dto);
+
+        // When — le responsable du projet peut modifier le statut
+        TaskDto result = taskService.updateTaskStatus(1L, TaskStatus.DONE, "resp-id", false);
+
+        // Then
+        assertEquals(TaskStatus.DONE, result.getStatut());
+    }
+
+    @Test
+    void deleteTask_shouldDelete_whenExists() {
+        when(taskRepository.existsById(1L)).thenReturn(true);
+
+        taskService.deleteTask(1L);
+
+        verify(taskRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    void updateTask_shouldUpdateAndReturn() {
+        // Given
+        Task existing = Task.builder().id(1L).titre("Ancienne").build();
+        TaskDto updateDto = TaskDto.builder().titre("Nouvelle").description("Desc")
+                .priorite(TaskPriority.HAUTE).assigneeKeycloakId("user-id").build();
+        Task saved = Task.builder().id(1L).titre("Nouvelle").build();
+        TaskDto outputDto = TaskDto.builder().id(1L).titre("Nouvelle").build();
+
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(taskRepository.save(existing)).thenReturn(saved);
+        when(taskMapper.toDto(saved)).thenReturn(outputDto);
+
+        // When
+        TaskDto result = taskService.updateTask(1L, updateDto);
+
+        // Then
+        assertEquals("Nouvelle", result.getTitre());
+    }
 }

@@ -98,4 +98,28 @@ class KeycloakUserServiceTest {
             keycloakUserService.deleteUser("id999");
         });
     }
+
+    @Test
+    void updateIdentityDocUrl_shouldUpdateUrl() {
+        // Given
+        User user = User.builder().keycloakId("id1").nom("Ahmed").email("ahmed@test.com").build();
+        when(userRepository.findById("id1")).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        // When
+        keycloakUserService.updateIdentityDocUrl("id1", "http://rustfs/doc.pdf");
+
+        // Then
+        assertEquals("http://rustfs/doc.pdf", user.getIdentityDocUrl());
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void updateIdentityDocUrl_shouldThrowException_whenNotFound() {
+        when(userRepository.findById("id999")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            keycloakUserService.updateIdentityDocUrl("id999", "http://rustfs/doc.pdf");
+        });
+    }
 }

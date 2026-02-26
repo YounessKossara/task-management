@@ -18,16 +18,18 @@
     <description>Gestion de projets et tâches — Keycloak, PostgreSQL, RustFS</description>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>25</java.version>
         <keycloak.version>26.0.0</keycloak.version>
         <minio.version>8.5.14</minio.version>
         <springdoc.version>2.8.0</springdoc.version>
-        <jacoco.version>0.8.12</jacoco.version>
+        <jacoco.version>0.8.13</jacoco.version>
         <testcontainers.version>1.20.4</testcontainers.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.build.directory}/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.host.url>http://localhost:9090</sonar.host.url>
+
     </properties>
 
     <dependencies>
@@ -252,6 +254,17 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/config/**</exclude>
+                        <exclude>**/entity/**</exclude>
+                        <exclude>**/dto/**</exclude>
+                        <exclude>**/mapper/**</exclude>
+                        <exclude>**/enums/**</exclude>
+                        <exclude>**/exception/**</exclude>
+                        <exclude>**/TaskProjectApplication.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

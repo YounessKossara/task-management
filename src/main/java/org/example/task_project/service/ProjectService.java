@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
@@ -26,7 +25,7 @@ public class ProjectService {
         return projectRepository.findAll()
                 .stream()
                 .map(projectMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public ProjectDto getProjectById(Long id) {

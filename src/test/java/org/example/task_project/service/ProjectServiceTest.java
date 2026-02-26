@@ -114,4 +114,35 @@ class ProjectServiceTest {
 
         verify(projectRepository, times(1)).deleteById(1L);
     }
+
+    @Test
+    void updateProject_shouldUpdateAndReturnDto() {
+        // Given
+        Project existing = Project.builder().id(1L).nom("Ancien").description("Ancienne desc").build();
+        ProjectDto updateDto = ProjectDto.builder().nom("Nouveau").description("Nouvelle desc")
+                .dateDebut(LocalDate.of(2026, 3, 1)).dateFin(LocalDate.of(2026, 6, 30))
+                .responsableKeycloakId("resp-id").build();
+        Project saved = Project.builder().id(1L).nom("Nouveau").description("Nouvelle desc").build();
+        ProjectDto outputDto = ProjectDto.builder().id(1L).nom("Nouveau").description("Nouvelle desc").build();
+
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(projectRepository.save(existing)).thenReturn(saved);
+        when(projectMapper.toDto(saved)).thenReturn(outputDto);
+
+        // When
+        ProjectDto result = projectService.updateProject(1L, updateDto);
+
+        // Then
+        assertEquals("Nouveau", result.getNom());
+        verify(projectRepository, times(1)).save(existing);
+    }
+
+    @Test
+    void updateProject_shouldThrowException_whenNotFound() {
+        when(projectRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            projectService.updateProject(999L, new ProjectDto());
+        });
+    }
 }
