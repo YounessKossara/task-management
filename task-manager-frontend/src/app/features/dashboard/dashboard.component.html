@@ -1,0 +1,50 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Tableau de Bord</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-0 border-start border-primary border-4 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Projets</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ stats.totalProjects }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-folder fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-white">
+                    <h6 class="m-0 fw-bold text-primary">Projets Récents</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li *ngFor="let p of recentProjects"
+                            class="list-group-item d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <h6 class="mb-0 fw-medium">{{ p.nom }}</h6>
+                                <small class="text-muted text-truncate d-inline-block" style="max-width: 300px;">
+                                    {{ p.description || 'Aucune description' }}
+                                </small>
+                            </div>
+                            <span class="badge bg-light text-dark border rounded-pill">{{ p.dateDebut }}</span>
+                        </li>
+                        <li *ngIf="recentProjects.length === 0" class="list-group-item text-muted p-4 text-center">
+                            Aucun projet trouvé dans la base de données.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

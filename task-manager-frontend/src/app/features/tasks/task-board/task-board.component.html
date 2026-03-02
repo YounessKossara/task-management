@@ -1,0 +1,150 @@
+<div class="container-fluid h-100 d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">
+            <a routerLink="/projects" class="text-decoration-none text-muted me-2"><i class="bi bi-arrow-left"></i></a>
+            Tableau des Tâches
+        </h2>
+        <button *ngIf="isAdmin" class="btn btn-primary" (click)="openModal()">
+            <i class="bi bi-plus-lg me-1"></i> Nouvelle Tâche
+        </button>
+    </div>
+
+    <div class="row flex-grow-1 overflow-hidden pb-4">
+        <!-- TODO Column -->
+        <div class="col-md-4 d-flex flex-column h-100">
+            <div class="bg-light rounded p-3 h-100 d-flex flex-column border">
+                <h5 class="text-dark fw-bold mb-3"><i class="bi bi-circle me-2 text-secondary"></i>À Faire ({{
+                    todoTasks.length }})</h5>
+                <div class="flex-grow-1 overflow-auto pe-2">
+                    <div *ngFor="let t of todoTasks" class="card shadow-sm mb-3 border-start border-secondary border-4">
+                        <div class="card-body p-3">
+                            <h6 class="card-title fw-bold mb-1">{{ t.titre }}</h6>
+                            <p class="card-text text-muted small mb-2 text-truncate">{{ t.description || 'Aucune
+                                description' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary">{{ t.priorite }}</span>
+                                <div>
+                                    <button *ngIf="isAdmin" class="btn btn-sm text-primary p-0 me-2"
+                                        (click)="openModal(t)"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                        (click)="changeStatus(t, TaskStatus.IN_PROGRESS)"><i
+                                            class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IN PROGRESS Column -->
+        <div class="col-md-4 d-flex flex-column h-100">
+            <div class="bg-light rounded p-3 h-100 d-flex flex-column border">
+                <h5 class="text-primary fw-bold mb-3"><i class="bi bi-play-circle me-2"></i>En Cours ({{
+                    inProgressTasks.length }})</h5>
+                <div class="flex-grow-1 overflow-auto pe-2">
+                    <div *ngFor="let t of inProgressTasks"
+                        class="card shadow-sm mb-3 border-start border-primary border-4">
+                        <div class="card-body p-3">
+                            <h6 class="card-title fw-bold mb-1">{{ t.titre }}</h6>
+                            <p class="card-text text-muted small mb-2 text-truncate">{{ t.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary">{{ t.priorite }}</span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary me-1"
+                                        (click)="changeStatus(t, TaskStatus.TODO)"><i
+                                            class="bi bi-arrow-left"></i></button>
+                                    <button *ngIf="isAdmin" class="btn btn-sm text-primary p-0 mx-2"
+                                        (click)="openModal(t)"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-success"
+                                        (click)="changeStatus(t, TaskStatus.DONE)"><i
+                                            class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DONE Column -->
+        <div class="col-md-4 d-flex flex-column h-100">
+            <div class="bg-light rounded p-3 h-100 d-flex flex-column border">
+                <h5 class="text-success fw-bold mb-3"><i class="bi bi-check-circle me-2"></i>Terminé ({{
+                    doneTasks.length }})</h5>
+                <div class="flex-grow-1 overflow-auto pe-2">
+                    <div *ngFor="let t of doneTasks"
+                        class="card shadow-sm mb-3 border-start border-success border-4 opacity-75">
+                        <div class="card-body p-3">
+                            <h6 class="card-title fw-bold text-decoration-line-through mb-1">{{ t.titre }}</h6>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="badge bg-secondary">{{ t.priorite }}</span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary me-2"
+                                        (click)="changeStatus(t, TaskStatus.IN_PROGRESS)"><i
+                                            class="bi bi-arrow-left"></i></button>
+                                    <button *ngIf="isAdmin" class="btn btn-sm text-danger p-0"
+                                        (click)="deleteTask(t.id!)"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal d-block" tabindex="-1" *ngIf="showModal" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">{{ isEditing ? 'Modifier la Tâche' : 'Nouvelle Tâche' }}</h5>
+                <button type="button" class="btn-close" (click)="closeModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">TITRE *</label>
+                    <input type="text" class="form-control" [(ngModel)]="currentTask.titre">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">DESCRIPTION</label>
+                    <textarea class="form-control" rows="3" [(ngModel)]="currentTask.description"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">ASSIGNÉ À</label>
+                    <select class="form-select" [(ngModel)]="currentTask.assigneeKeycloakId">
+                        <option [ngValue]="null">-- Non assigné --</option>
+                        <option *ngFor="let u of assignableUsers" [value]="u.keycloakId">{{ u.prenom }} {{ u.nom }}
+                        </option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted fw-bold small">STATUT</label>
+                        <select class="form-select" [(ngModel)]="currentTask.statut">
+                            <option [value]="TaskStatus.TODO">À Faire</option>
+                            <option [value]="TaskStatus.IN_PROGRESS">En Cours</option>
+                            <option [value]="TaskStatus.DONE">Terminé</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted fw-bold small">PRIORITÉ</label>
+                        <select class="form-select" [(ngModel)]="currentTask.priorite">
+                            <option [value]="TaskPriority.LOW">Basse</option>
+                            <option [value]="TaskPriority.MEDIUM">Moyenne</option>
+                            <option [value]="TaskPriority.HIGH">Haute</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
+                <button type="button" class="btn btn-primary" (click)="saveTask()" [disabled]="!currentTask.titre">
+                    {{ isEditing ? 'Enregistrer' : 'Créer' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -33,9 +33,9 @@ class TaskControllerTest {
                 List<TaskDto> tasks = Arrays.asList(
                                 TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build(),
                                 TaskDto.builder().id(2L).titre("Tâche 2").statut(TaskStatus.DONE).build());
-                when(taskService.getTasksByProject(1L, null, null)).thenReturn(tasks);
+                when(taskService.getTasksByProject(1L, null, null, null, false)).thenReturn(tasks);
 
-                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, null, null);
+                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, null, null, null);
 
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(2, response.getBody().size());
@@ -45,9 +45,10 @@ class TaskControllerTest {
         void getTasksByProject_withStatusFilter() {
                 List<TaskDto> tasks = List.of(
                                 TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build());
-                when(taskService.getTasksByProject(1L, TaskStatus.TODO, null)).thenReturn(tasks);
+                when(taskService.getTasksByProject(1L, TaskStatus.TODO, null, null, false)).thenReturn(tasks);
 
-                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, TaskStatus.TODO, null);
+                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, TaskStatus.TODO, null,
+                                null);
 
                 assertEquals(1, response.getBody().size());
                 assertEquals(TaskStatus.TODO, response.getBody().get(0).getStatut());

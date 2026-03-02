@@ -1,0 +1,99 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Gestion des Projets</h2>
+        <button *ngIf="isAdmin" class="btn btn-primary" (click)="openModal()">
+            <i class="bi bi-plus-lg me-1"></i> Nouveau Projet
+        </button>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Nom du Projet</th>
+                            <th>Description</th>
+                            <th>Date de début</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of projects">
+                            <td class="ps-4 text-muted">#{{ p.id }}</td>
+                            <td class="fw-medium text-primary">{{ p.nom }}</td>
+                            <td class="text-muted text-truncate" style="max-width: 300px;">{{ p.description || 'N/A' }}
+                            </td>
+                            <td>{{ p.dateDebut }}</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-light text-success me-2 border" (click)="viewTasks(p.id!)"
+                                    title="Voir les tâches">
+                                    <i class="bi bi-kanban"></i>
+                                </button>
+                                <button *ngIf="isAdmin" class="btn btn-sm btn-light text-primary me-2 border"
+                                    (click)="openModal(p)" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button *ngIf="isAdmin" class="btn btn-sm btn-light text-danger border"
+                                    (click)="deleteProject(p.id!)" title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="projects.length === 0">
+                            <td [colSpan]="isAdmin ? 5 : 4" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder-x fs-1 d-block mb-3"></i>
+                                Aucun projet trouvé.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal d-block" tabindex="-1" *ngIf="showModal" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-gray-800">{{ isEditing ? 'Modifier Projet' : 'Nouveau Projet' }}
+                </h5>
+                <button type="button" class="btn-close" (click)="closeModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small text-uppercase">Nom du projet *</label>
+                    <input type="text" class="form-control" [(ngModel)]="currentProject.nom"
+                        placeholder="Ex: Projet Refonte Web">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small text-uppercase">Description</label>
+                    <textarea class="form-control" rows="3" [(ngModel)]="currentProject.description"
+                        placeholder="Détails du projet..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small text-uppercase">Date de début *</label>
+                    <input type="date" class="form-control" [(ngModel)]="currentProject.dateDebut">
+                </div>
+                <div class="mb-3" *ngIf="isAdmin">
+                    <label class="form-label text-muted fw-bold small text-uppercase">Responsable du projet</label>
+                    <select class="form-select" [(ngModel)]="currentProject.responsableKeycloakId">
+                        <option [ngValue]="null">-- Aucun responsable --</option>
+                        <option *ngFor="let u of users" [value]="u.keycloakId">{{ u.prenom }} {{ u.nom }} ({{ u.email
+                            }})</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
+                <button type="button" class="btn btn-primary px-4" (click)="saveProject()"
+                    [disabled]="!currentProject.nom || !currentProject.dateDebut">
+                    {{ isEditing ? 'D\'accord' : 'Créer le projet' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

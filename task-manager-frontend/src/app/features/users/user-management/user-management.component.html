@@ -1,0 +1,144 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Gestion de l'Équipe</h2>
+        <div *ngIf="!isAdmin" class="alert alert-warning mb-0 p-2">
+            <i class="bi bi-shield-lock me-1"></i> Mode lecture seule.
+        </div>
+        <button *ngIf="isAdmin" class="btn btn-primary" (click)="openModal()">
+            <i class="bi bi-person-plus me-1"></i> Nouvel Utilisateur
+        </button>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Nom Complet</th>
+                            <th>Email</th>
+                            <th>Téléphone</th>
+                            <th>Rôle</th>
+                            <th>Pièce d'identité</th>
+                            <th *ngIf="isAdmin" class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let u of users">
+                            <td class="ps-4 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-3"
+                                        style="width: 40px; height: 40px; font-weight: bold;">
+                                        {{ (u.prenom.charAt(0) || 'U') | uppercase }}{{ (u.nom.charAt(0) || '') |
+                                        uppercase }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ u.prenom }} {{ u.nom }}</div>
+                                        <div class="small text-muted">ID: {{ u.keycloakId | slice:0:8 }}...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ u.email }}</td>
+                            <td class="text-muted">{{ u.telephone || 'N/A' }}</td>
+                            <td>
+                                <span class="badge"
+                                    [ngClass]="{'bg-danger': u.role === 'ADMIN', 'bg-secondary': u.role !== 'ADMIN'}">
+                                    {{ u.role }}
+                                </span>
+                            </td>
+                            <td>
+                                <a *ngIf="u.identityDocUrl" [href]="u.identityDocUrl" target="_blank"
+                                    class="btn btn-sm btn-outline-info me-2 rounded-pill">
+                                    <i class="bi bi-file-earmark-text me-1"></i> Voir
+                                </a>
+                                <span *ngIf="!u.identityDocUrl" class="text-muted small">Aucune</span>
+                            </td>
+                            <td *ngIf="isAdmin" class="text-end pe-4">
+                                <button class="btn btn-sm btn-light text-primary me-2 border" (click)="openModal(u)"
+                                    title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger border"
+                                    (click)="deleteUser(u.keycloakId)" title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-success border ms-2"
+                                    (click)="triggerFileInput(u.keycloakId)" title="Uploader une pièce d'identité">
+                                    <i class="bi bi-upload"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="users.length === 0">
+                            <td [colSpan]="isAdmin ? 5 : 4" class="text-center py-5 text-muted">
+                                <i class="bi bi-people fs-1 d-block mb-3"></i>
+                                Aucun utilisateur trouvé.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept=".pdf,.png,.jpg,.jpeg">
+
+<!-- Modal -->
+<div class="modal d-block" tabindex="-1" *ngIf="showModal" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">{{ isEditing ? 'Modifier Utilisateur' : 'Nouvel Utilisateur' }}</h5>
+                <button type="button" class="btn-close" (click)="closeModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted fw-bold small">PRENOM *</label>
+                        <input type="text" class="form-control" [(ngModel)]="currentUser.prenom">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted fw-bold small">NOM *</label>
+                        <input type="text" class="form-control" [(ngModel)]="currentUser.nom">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">EMAIL *</label>
+                    <input type="email" class="form-control" [(ngModel)]="currentUser.email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">TÉLÉPHONE</label>
+                    <input type="text" class="form-control" [(ngModel)]="currentUser.telephone">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">DATE DE NAISSANCE</label>
+                    <input type="date" class="form-control" [(ngModel)]="currentUser.dateNaissance">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">RÔLE</label>
+                    <select class="form-select" [(ngModel)]="currentUser.role">
+                        <option value="USER">Utilisateur (USER)</option>
+                        <option value="ADMIN">Administrateur (ADMIN)</option>
+                    </select>
+                </div>
+                <div class="mb-3" *ngIf="!isEditing">
+                    <label class="form-label text-muted fw-bold small">PIÈCE D'IDENTITÉ</label>
+                    <input type="file" class="form-control" (change)="onFileSelected($event)"
+                        accept=".pdf,.png,.jpg,.jpeg">
+                </div>
+                <div class="mb-3" *ngIf="!isEditing">
+                    <label class="form-label text-muted fw-bold small">MOT DE PASSE TEMPORAIRE *</label>
+                    <input type="password" class="form-control" [(ngModel)]="password">
+                    <div class="form-text">L'utilisateur devra le changer à la 1ère connexion.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
+                <button type="button" class="btn btn-primary px-4" (click)="saveUser()"
+                    [disabled]="!currentUser.nom || !currentUser.email">
+                    {{ isEditing ? 'Enregistrer' : 'Créer Compte' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

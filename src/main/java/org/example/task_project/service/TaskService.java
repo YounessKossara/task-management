@@ -27,15 +27,28 @@ public class TaskService {
         this.taskMapper = taskMapper;
     }
 
-    public List<TaskDto> getTasksByProject(Long projectId, TaskStatus statut, String assigneeKeycloakId) {
+    public List<TaskDto> getTasksByProject(Long projectId, TaskStatus statut, String requestedAssigneeId,
+            String currentUserId, boolean isAdmin) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + projectId));
+
+        String actualAssigneeId = requestedAssigneeId;
+
+        if (!isAdmin && (project.getResponsableKeycloakId() == null
+                || !project.getResponsableKeycloakId().equals(currentUserId))) {
+            // Un USER qui n'est pas responsable du projet ne peut voir QUE ses propres
+            // tâches.
+            actualAssigneeId = currentUserId;
+        }
+
         List<Task> tasks;
 
-        if (statut != null && assigneeKeycloakId != null) {
-            tasks = taskRepository.findByProjectIdAndStatutAndAssigneeKeycloakId(projectId, statut, assigneeKeycloakId);
+        if (statut != null && actualAssigneeId != null) {
+            tasks = taskRepository.findByProjectIdAndStatutAndAssigneeKeycloakId(projectId, statut, actualAssigneeId);
         } else if (statut != null) {
             tasks = taskRepository.findByProjectIdAndStatut(projectId, statut);
-        } else if (assigneeKeycloakId != null) {
-            tasks = taskRepository.findByProjectIdAndAssigneeKeycloakId(projectId, assigneeKeycloakId);
+        } else if (actualAssigneeId != null) {
+            tasks = taskRepository.findByProjectIdAndAssigneeKeycloakId(projectId, actualAssigneeId);
         } else {
             tasks = taskRepository.findByProjectId(projectId);
         }
@@ -48,6 +61,12 @@ public class TaskService {
     public TaskDto createTask(Long projectId, TaskDto taskDto) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + projectId));
+
+        if (taskDto.getAssigneeKeycloakId() != null
+                && taskDto.getAssigneeKeycloakId().equals(project.getResponsableKeycloakId())) {
+            throw new IllegalArgumentException(
+                    "Le responsable du projet ne peut pas s'assigner des tâches dans ce projet.");
+        }
 
         Task task = taskMapper.toEntity(taskDto);
         task.setProject(project);
@@ -62,6 +81,12 @@ public class TaskService {
     public TaskDto updateTask(Long id, TaskDto taskDto) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+
+        if (taskDto.getAssigneeKeycloakId() != null
+                && taskDto.getAssigneeKeycloakId().equals(task.getProject().getResponsableKeycloakId())) {
+            throw new IllegalArgumentException(
+                    "Le responsable du projet ne peut pas s'assigner des tâches dans ce projet.");
+        }
 
         task.setTitre(taskDto.getTitre());
         task.setDescription(taskDto.getDescription());

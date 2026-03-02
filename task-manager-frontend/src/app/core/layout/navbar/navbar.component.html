@@ -1,0 +1,13 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1 fw-bold text-primary">
+            <i class="bi bi-layout-text-window-reverse me-2"></i>App
+        </span>
+        <div class="d-flex align-items-center">
+            <span class="me-3 fw-medium">Salut, {{ username }}</span>
+            <button class="btn btn-outline-danger btn-sm" (click)="logout()">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </button>
+        </div>
+    </div>
+</nav>

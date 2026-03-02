@@ -45,12 +45,14 @@ class TaskServiceTest {
         TaskDto dto1 = TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build();
         TaskDto dto2 = TaskDto.builder().id(2L).titre("Tâche 2").statut(TaskStatus.DONE).build();
 
+        Project project = Project.builder().id(1L).responsableKeycloakId("admin-id").build();
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
         when(taskRepository.findByProjectId(1L)).thenReturn(Arrays.asList(task1, task2));
         when(taskMapper.toDto(task1)).thenReturn(dto1);
         when(taskMapper.toDto(task2)).thenReturn(dto2);
 
         // When
-        List<TaskDto> result = taskService.getTasksByProject(1L, null, null);
+        List<TaskDto> result = taskService.getTasksByProject(1L, null, null, "admin-id", true);
 
         // Then
         assertEquals(2, result.size());
@@ -62,11 +64,13 @@ class TaskServiceTest {
         Task task = Task.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build();
         TaskDto dto = TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build();
 
+        Project project = Project.builder().id(1L).responsableKeycloakId("admin-id").build();
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
         when(taskRepository.findByProjectIdAndStatut(1L, TaskStatus.TODO)).thenReturn(List.of(task));
         when(taskMapper.toDto(task)).thenReturn(dto);
 
         // When
-        List<TaskDto> result = taskService.getTasksByProject(1L, TaskStatus.TODO, null);
+        List<TaskDto> result = taskService.getTasksByProject(1L, TaskStatus.TODO, null, "admin-id", true);
 
         // Then
         assertEquals(1, result.size());
@@ -200,7 +204,8 @@ class TaskServiceTest {
     @Test
     void updateTask_shouldUpdateAndReturn() {
         // Given
-        Task existing = Task.builder().id(1L).titre("Ancienne").build();
+        Project project = Project.builder().id(1L).responsableKeycloakId("resp-id").build();
+        Task existing = Task.builder().id(1L).titre("Ancienne").project(project).build();
         TaskDto updateDto = TaskDto.builder().titre("Nouvelle").description("Desc")
                 .priorite(TaskPriority.HAUTE).assigneeKeycloakId("user-id").build();
         Task saved = Task.builder().id(1L).titre("Nouvelle").build();

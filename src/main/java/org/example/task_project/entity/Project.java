@@ -19,8 +19,10 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String nom;
     private String description;
+    @Column(nullable = false)
     private LocalDate dateDebut;
     private LocalDate dateFin;
     private String responsableKeycloakId;

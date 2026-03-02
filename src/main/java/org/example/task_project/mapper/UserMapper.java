@@ -4,7 +4,7 @@ import org.example.task_project.dto.UserDto;
 import org.example.task_project.entity.User;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface UserMapper {
 
     UserDto toDto(User user);

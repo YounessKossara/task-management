@@ -3,6 +3,7 @@ package org.example.task_project.controller;
 import org.example.task_project.dto.TaskDto;
 import org.example.task_project.enums.TaskStatus;
 import org.example.task_project.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -26,14 +27,20 @@ public class TaskController {
     public ResponseEntity<List<TaskDto>> getTasksByProject(
             @PathVariable Long projectId,
             @RequestParam(required = false) TaskStatus statut,
-            @RequestParam(required = false) String assigneeKeycloakId) {
-        return ResponseEntity.ok(taskService.getTasksByProject(projectId, statut, assigneeKeycloakId));
+            @RequestParam(required = false) String assigneeKeycloakId,
+            Authentication authentication) {
+        String currentUserId = authentication != null ? authentication.getName() : null;
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_ADMIN"));
+        return ResponseEntity
+                .ok(taskService.getTasksByProject(projectId, statut, assigneeKeycloakId, currentUserId, isAdmin));
     }
 
     @PostMapping("/projects/{projectId}/tasks")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TaskDto> createTask(@PathVariable Long projectId,
-            @RequestBody TaskDto taskDto) {
+            @Valid @RequestBody TaskDto taskDto) {
         TaskDto created = taskService.createTask(projectId, taskDto);
         return ResponseEntity.status(201).body(created);
     }
@@ -41,7 +48,7 @@ public class TaskController {
     @PutMapping("/tasks/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TaskDto> updateTask(@PathVariable Long id,
-            @RequestBody TaskDto taskDto) {
+            @Valid @RequestBody TaskDto taskDto) {
         return ResponseEntity.ok(taskService.updateTask(id, taskDto));
     }
 

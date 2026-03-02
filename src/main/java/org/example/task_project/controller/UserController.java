@@ -3,6 +3,7 @@ package org.example.task_project.controller;
 import org.example.task_project.dto.UserDto;
 import org.example.task_project.service.FileStorageService;
 import org.example.task_project.service.KeycloakUserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto,
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto,
             @RequestParam String password) {
         UserDto created = keycloakUserService.createUser(userDto, password);
         return ResponseEntity.status(201).body(created);
@@ -45,7 +46,7 @@ public class UserController {
     @PutMapping("/{keycloakId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> updateUser(@PathVariable String keycloakId,
-            @RequestBody UserDto userDto) {
+            @Valid @RequestBody UserDto userDto) {
         return ResponseEntity.ok(keycloakUserService.updateUser(keycloakId, userDto));
     }
 

@@ -18,9 +18,12 @@ public class User {
     @Id
     private String keycloakId;
 
+    @Column(nullable = false)
     private String nom;
+    @Column(nullable = false)
     private String prenom;
     private LocalDate dateNaissance;
+    @Column(nullable = false, unique = true)
     private String email;
     private String telephone;
     @Column(length = 1024)

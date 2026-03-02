@@ -2,6 +2,7 @@ package org.example.task_project.controller;
 
 import org.example.task_project.dto.ProjectDto;
 import org.example.task_project.service.ProjectService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,7 @@ public class ProjectController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProjectDto> createProject(@RequestBody ProjectDto projectDto) {
+    public ResponseEntity<ProjectDto> createProject(@Valid @RequestBody ProjectDto projectDto) {
         ProjectDto created = projectService.createProject(projectDto);
         return ResponseEntity.status(201).body(created);
     }
@@ -40,7 +41,7 @@ public class ProjectController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProjectDto> updateProject(@PathVariable Long id,
-            @RequestBody ProjectDto projectDto) {
+            @Valid @RequestBody ProjectDto projectDto) {
         return ResponseEntity.ok(projectService.updateProject(id, projectDto));
     }
 

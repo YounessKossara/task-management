@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface TaskMapper {
 
     @Mapping(target = "projectId", expression = "java(task.getProject() != null ? task.getProject().getId() : null)")

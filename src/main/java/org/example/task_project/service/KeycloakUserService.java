@@ -11,10 +11,13 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.ws.rs.core.Response;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -51,6 +54,7 @@ public class KeycloakUserService {
         return userMapper.toDto(user);
     }
 
+    @Transactional
     public UserDto createUser(UserDto userDto, String password) {
         // 1. Créer dans Keycloak
         UserRepresentation keycloakUser = new UserRepresentation();
@@ -77,18 +81,45 @@ public class KeycloakUserService {
             String keycloakId = response.getLocation().getPath()
                     .replaceAll(".*/([^/]+)$", "$1");
 
-            // 3. Sauvegarder en local
-            User user = userMapper.toEntity(userDto);
-            user.setKeycloakId(keycloakId);
-            user.setCreatedAt(java.time.LocalDateTime.now());
-            user.setUpdatedAt(java.time.LocalDateTime.now());
-            userRepository.save(user);
+            // Assign role to user if specified, handle gracefully if admin-client lacks
+            // permissions (403)
+            if (userDto.getRole() != null) {
+                try {
+                    RoleRepresentation roleRep = keycloak.realm(realm).roles().get(userDto.getRole())
+                            .toRepresentation();
+                    getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(roleRep));
+                } catch (Exception e) {
+                    System.err.println("Avertissement: Impossible d'assigner le rôle '" + userDto.getRole()
+                            + "' dans Keycloak. Veuillez vérifier les permissions du client admin-cli (manage-users, view-users). L'utilisateur est créé localement avec ce rôle.");
+                }
+            }
 
-            userDto.setKeycloakId(keycloakId);
-            return userDto;
+            // 3. Sauvegarder en local
+            try {
+                User user = userMapper.toEntity(userDto);
+                user.setKeycloakId(keycloakId);
+                user.setCreatedAt(java.time.LocalDateTime.now());
+                user.setUpdatedAt(java.time.LocalDateTime.now());
+                userRepository.save(user);
+
+                userDto.setKeycloakId(keycloakId);
+                return userDto;
+            } catch (Exception e) {
+                // Si l'enregistrement en base de données échoue, on supprime l'utilisateur de
+                // Keycloak pour éviter les incohérences
+                try {
+                    getUsersResource().get(keycloakId).remove();
+                } catch (Exception deleteEx) {
+                    System.err.println(
+                            "Attention: Impossible de supprimer l'utilisateur Keycloak suite à une erreur locale.");
+                }
+                throw e; // Rethrow pour que l'API renvoie une erreur 500 propre et pas un "utilisteur
+                         // créé" partiel
+            }
         }
     }
 
+    @Transactional
     public UserDto updateUser(String keycloakId, UserDto userDto) {
         User user = userRepository.findById(keycloakId)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId));
@@ -99,6 +130,21 @@ public class KeycloakUserService {
         keycloakUser.setLastName(userDto.getNom());
         keycloakUser.setEmail(userDto.getEmail());
         getUsersResource().get(keycloakId).update(keycloakUser);
+
+        // Update role if changed
+        if (userDto.getRole() != null && !userDto.getRole().equals(user.getRole())) {
+            // Remove old role
+            if (user.getRole() != null) {
+                try {
+                    RoleRepresentation oldRole = keycloak.realm(realm).roles().get(user.getRole()).toRepresentation();
+                    getUsersResource().get(keycloakId).roles().realmLevel().remove(Collections.singletonList(oldRole));
+                } catch (Exception e) {
+                }
+            }
+            // Add new role
+            RoleRepresentation newRole = keycloak.realm(realm).roles().get(userDto.getRole()).toRepresentation();
+            getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(newRole));
+        }
 
         // 2. Mettre à jour en local
         user.setNom(userDto.getNom());
@@ -113,18 +159,36 @@ public class KeycloakUserService {
         return userMapper.toDto(user);
     }
 
+    @Transactional
     public void deleteUser(String keycloakId) {
         if (!userRepository.existsById(keycloakId)) {
             throw new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId);
         }
 
-        // 1. Supprimer de Keycloak
-        getUsersResource().get(keycloakId).remove();
-
-        // 2. Supprimer en local
+        // 1. Supprimer en local d'abord (Transactional SQL)
         userRepository.deleteById(keycloakId);
+
+        // 2. Supprimer de Keycloak
+        try {
+            getUsersResource().get(keycloakId).remove();
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            System.out
+                    .println("Utilisateur " + keycloakId + " non trouvé dans Keycloak. Suppression locale finalisée.");
+        } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("404")) {
+                System.out.println(
+                        "Erreur 404 capturée pour l'utilisateur " + keycloakId + ". Suppression locale finalisée.");
+            } else {
+                // Si Keycloak échoue (autre que 404), on lève une exception pour rollback la
+                // transaction SQL
+                throw new KeycloakException(
+                        "Impossible de supprimer l'utilisateur dans Keycloak: " + e.getMessage()
+                                + ". Annulation locale.");
+            }
+        }
     }
 
+    @Transactional
     public void updateIdentityDocUrl(String keycloakId, String url) {
         User user = userRepository.findById(keycloakId)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId));
