@@ -29,19 +29,19 @@
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
-                        <li *ngFor="let p of recentProjects"
-                            class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <li *ngIf="recentProjects.length === 0" class="list-group-item text-muted p-4 text-center">
+                            Aucun projet trouvé dans la base de données.
+                        </li>
+                        <a *ngFor="let p of recentProjects" [routerLink]="['/projects', p.id, 'tasks']"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 text-decoration-none">
                             <div>
-                                <h6 class="mb-0 fw-medium">{{ p.nom }}</h6>
+                                <h6 class="mb-0 fw-medium text-dark">{{ p.nom }}</h6>
                                 <small class="text-muted text-truncate d-inline-block" style="max-width: 300px;">
                                     {{ p.description || 'Aucune description' }}
                                 </small>
                             </div>
                             <span class="badge bg-light text-dark border rounded-pill">{{ p.dateDebut }}</span>
-                        </li>
-                        <li *ngIf="recentProjects.length === 0" class="list-group-item text-muted p-4 text-center">
-                            Aucun projet trouvé dans la base de données.
-                        </li>
+                        </a>
                     </ul>
                 </div>
             </div>

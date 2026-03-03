@@ -44,7 +44,7 @@ class ProjectServiceTest {
         when(projectMapper.toDto(p2)).thenReturn(dto2);
 
         // When
-        List<ProjectDto> result = projectService.getAllProjects();
+        List<ProjectDto> result = projectService.getAllProjects("user-id", true, false);
 
         // Then
         assertEquals(2, result.size());
@@ -130,7 +130,7 @@ class ProjectServiceTest {
         when(projectMapper.toDto(saved)).thenReturn(outputDto);
 
         // When
-        ProjectDto result = projectService.updateProject(1L, updateDto);
+        ProjectDto result = projectService.updateProject(1L, updateDto, "resp-id", false);
 
         // Then
         assertEquals("Nouveau", result.getNom());
@@ -142,7 +142,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> {
-            projectService.updateProject(999L, new ProjectDto());
+            projectService.updateProject(999L, new ProjectDto(), "any", true);
         });
     }
 }

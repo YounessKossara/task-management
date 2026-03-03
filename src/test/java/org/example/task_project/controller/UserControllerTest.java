@@ -66,6 +66,7 @@ class UserControllerTest {
                 assertEquals(HttpStatus.CREATED, response.getStatusCode());
                 assertEquals("new-id", response.getBody().getKeycloakId());
         }
+
         @Test
         void updateUser_shouldReturn200() {
                 UserDto dto = UserDto.builder().keycloakId("id1").nom("Modifié").build();

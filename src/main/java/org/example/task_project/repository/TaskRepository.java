@@ -10,13 +10,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByProjectId(Long projectId);
 
-    // Filtrer par projet + statut
     List<Task> findByProjectIdAndStatut(Long projectId, TaskStatus statut);
 
-    // Filtrer par projet + utilisateur assigné
     List<Task> findByProjectIdAndAssigneeKeycloakId(Long projectId, String assigneeKeycloakId);
 
-    // Filtrer par projet + statut + utilisateur
     List<Task> findByProjectIdAndStatutAndAssigneeKeycloakId(Long projectId, TaskStatus statut,
             String assigneeKeycloakId);
 }

@@ -73,7 +73,7 @@ public class SecurityConfig {
 
     // Convertit les rôles Keycloak (realm_access.roles) en format Spring Security
     // (ROLE_ADMIN)
-    static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+    public static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
 
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
@@ -87,13 +87,13 @@ public class SecurityConfig {
             List<String> roles = (List<String>) realmAccess.get("roles");
 
             return roles.stream()
-                    .map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role)) // Explicit cast here
+                    .map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
                     .toList();
         }
     }
 
     // Evaluate JWT and sync missing users into local DB
-    static class CustomJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+    public static class CustomJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
         private final UserRepository userRepository;
         private final KeycloakRoleConverter roleConverter = new KeycloakRoleConverter();
 
@@ -133,7 +133,23 @@ public class SecurityConfig {
                 userRepository.save(newUser);
             }
 
-            return new JwtAuthenticationToken(jwt, authorities, jwt.getClaimAsString("preferred_username"));
+            // Fallback et Uppercase : S'assurer que le rôle de la DB locale est pris en
+            // compte
+            // Ceci règle le problème où Keycloak n'envoie pas le rôle (ex: erreur de
+            // création) ou l'envoie en minuscules
+            java.util.List<GrantedAuthority> finalAuthorities = new java.util.ArrayList<>(authorities);
+
+            User localUser = userRepository.findById(keycloakId).orElse(null);
+            if (localUser != null && localUser.getRole() != null) {
+                String expectedRole = "ROLE_" + localUser.getRole().toUpperCase();
+                if (finalAuthorities.stream().noneMatch(a -> a.getAuthority().equals(expectedRole))) {
+                    finalAuthorities.add(new SimpleGrantedAuthority(expectedRole));
+                }
+            }
+
+            // Utiliser jwt.getSubject() (UUID Keycloak) comme ID Principal au lieu de
+            // 'preferred_username'
+            return new JwtAuthenticationToken(jwt, finalAuthorities, keycloakId);
         }
     }
 }

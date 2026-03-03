@@ -11,16 +11,14 @@ import Keycloak from 'keycloak-js';
 })
 export class NavbarComponent implements OnInit {
     username = '';
+    currentUserId: string | undefined;
     private keycloak = inject(Keycloak);
 
     async ngOnInit() {
         if (this.keycloak.authenticated) {
             const profile = await this.keycloak.loadUserProfile();
-            this.username = profile.username || 'Utilisateur';
+            this.username = profile.firstName || profile.username || 'Utilisateur';
+            this.currentUserId = this.keycloak.tokenParsed?.sub;
         }
-    }
-
-    logout() {
-        this.keycloak.logout({ redirectUri: window.location.origin });
     }
 }

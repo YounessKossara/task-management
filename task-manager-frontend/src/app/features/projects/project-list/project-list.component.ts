@@ -8,6 +8,7 @@ import { User } from '../../../core/models/user.model';
 import Keycloak from 'keycloak-js';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
     selector: 'app-project-list',
@@ -20,12 +21,15 @@ export class ProjectListComponent implements OnInit {
     projects: Project[] = [];
     users: User[] = [];
     isAdmin = false;
+    isResponsable = false;
+    currentUserId: string | undefined;
 
     showModal = false;
     currentProject: Project = { nom: '', description: '', dateDebut: '' };
     isEditing = false;
 
     private keycloak = inject(Keycloak);
+    private toastService = inject(ToastService);
 
     constructor(
         private projectService: ProjectService,
@@ -35,15 +39,17 @@ export class ProjectListComponent implements OnInit {
 
     ngOnInit() {
         this.isAdmin = this.keycloak.hasRealmRole('ADMIN');
+        this.isResponsable = this.keycloak.hasRealmRole('RESPONSABLE');
+        this.currentUserId = this.keycloak.tokenParsed?.sub;
         this.loadProjects();
-        if (this.isAdmin) {
+        if (this.isAdmin || this.isResponsable) {
             this.loadUsers();
         }
     }
 
     loadUsers() {
         this.userService.getAllUsers().subscribe((data: User[]) => {
-            this.users = data;
+            this.users = data.filter(u => u.role === 'RESPONSABLE');
         });
     }
 
@@ -75,11 +81,13 @@ export class ProjectListComponent implements OnInit {
     saveProject() {
         if (this.isEditing && this.currentProject.id) {
             this.projectService.updateProject(this.currentProject.id, this.currentProject).subscribe(() => {
+                this.toastService.showSuccess(`Projet modifié avec succès`);
                 this.loadProjects();
                 this.closeModal();
             });
         } else {
             this.projectService.createProject(this.currentProject).subscribe(() => {
+                this.toastService.showSuccess(`Projet créé avec succès`);
                 this.loadProjects();
                 this.closeModal();
             });
@@ -89,8 +97,15 @@ export class ProjectListComponent implements OnInit {
     deleteProject(id: number) {
         if (confirm('Voulez-vous vraiment supprimer ce projet ?')) {
             this.projectService.deleteProject(id).subscribe(() => {
+                this.toastService.showSuccess(`Projet supprimé`);
                 this.loadProjects();
             });
         }
+    }
+
+    getResponsableName(keycloakId?: string): string {
+        if (!keycloakId) return 'Non défini';
+        const user = this.users.find(u => u.keycloakId === keycloakId);
+        return user ? `${user.prenom} ${user.nom}` : 'Inconnu';
     }
 }

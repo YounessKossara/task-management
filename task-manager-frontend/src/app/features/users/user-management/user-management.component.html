@@ -104,7 +104,12 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small">EMAIL *</label>
-                    <input type="email" class="form-control" [(ngModel)]="currentUser.email">
+                    <input type="email" class="form-control" [(ngModel)]="currentUser.email" name="email"
+                        #emailInput="ngModel" required email pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+                    <div *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
+                        class="text-danger small mt-1">
+                        Format d'adresse email invalide.
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small">TÉLÉPHONE</label>
@@ -118,6 +123,7 @@
                     <label class="form-label text-muted fw-bold small">RÔLE</label>
                     <select class="form-select" [(ngModel)]="currentUser.role">
                         <option value="USER">Utilisateur (USER)</option>
+                        <option value="RESPONSABLE">Responsable (RESPONSABLE)</option>
                         <option value="ADMIN">Administrateur (ADMIN)</option>
                     </select>
                 </div>
@@ -135,7 +141,7 @@
             <div class="modal-footer border-top-0 bg-light">
                 <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
                 <button type="button" class="btn btn-primary px-4" (click)="saveUser()"
-                    [disabled]="!currentUser.nom || !currentUser.email">
+                    [disabled]="!currentUser.nom || !currentUser.email || (emailInput.invalid && emailInput.touched)">
                     {{ isEditing ? 'Enregistrer' : 'Créer Compte' }}
                 </button>
             </div>

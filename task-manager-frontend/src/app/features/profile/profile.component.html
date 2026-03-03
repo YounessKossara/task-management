@@ -1,0 +1,63 @@
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 text-primary">
+            <i class="bi bi-person-circle me-2"></i> Mon Profil
+        </h2>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Chargement de vos informations...</p>
+    </div>
+
+    <div *ngIf="errorMsg" class="alert alert-danger shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ errorMsg }}
+    </div>
+
+    <div *ngIf="!isLoading && user" class="row">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 text-center">
+                    <div class="d-inline-flex justify-content-center align-items-center bg-light text-primary rounded-circle mb-3"
+                        style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        {{ (user.prenom || '').charAt(0) | uppercase }}{{ (user.nom || '').charAt(0) | uppercase }}
+                    </div>
+                    <h3 class="mb-1">{{ user.prenom }} {{ user.nom }}</h3>
+                    <span class="badge" [ngClass]="{
+                        'bg-danger': user.role === 'ADMIN',
+                        'bg-warning text-dark': user.role === 'RESPONSABLE',
+                        'bg-primary': user.role === 'USER'
+                    }">{{ user.role }}</span>
+                </div>
+                <div class="card-body p-4">
+                    <h5 class="card-title text-muted mb-4 border-bottom pb-2">Informations Personnelles</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted"><i class="bi bi-envelope me-2"></i> Email</div>
+                        <div class="col-sm-8 fw-medium">{{ user.email }}</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted"><i class="bi bi-telephone me-2"></i> Téléphone</div>
+                        <div class="col-sm-8 fw-medium">{{ user.telephone || 'Non renseigné' }}</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted"><i class="bi bi-calendar3 me-2"></i> Date de Naissance</div>
+                        <div class="col-sm-8 fw-medium">{{ user.dateNaissance || 'Non renseignée' }}</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted"><i class="bi bi-file-earmark-person me-2"></i> ID Keycloak
+                        </div>
+                        <div class="col-sm-8 text-break" style="font-size: 0.9em;">
+                            <span class="text-secondary font-monospace">{{ user.keycloakId }}</span>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

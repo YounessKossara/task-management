@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.core.Authentication;
+
 import java.util.List;
 
 @RestController
@@ -20,13 +22,17 @@ public class ProjectController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<ProjectDto>> getAllProjects() {
-        return ResponseEntity.ok(projectService.getAllProjects());
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE', 'USER')")
+    public ResponseEntity<List<ProjectDto>> getAllProjects(Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isResponsable = !isAdmin && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_RESPONSABLE"));
+        String userId = authentication.getName();
+        return ResponseEntity.ok(projectService.getAllProjects(userId, isAdmin, isResponsable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE', 'USER')")
     public ResponseEntity<ProjectDto> getProjectById(@PathVariable Long id) {
         return ResponseEntity.ok(projectService.getProjectById(id));
     }
@@ -39,10 +45,12 @@ public class ProjectController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE')")
     public ResponseEntity<ProjectDto> updateProject(@PathVariable Long id,
-            @Valid @RequestBody ProjectDto projectDto) {
-        return ResponseEntity.ok(projectService.updateProject(id, projectDto));
+            @Valid @RequestBody ProjectDto projectDto, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        String userId = authentication.getName();
+        return ResponseEntity.ok(projectService.updateProject(id, projectDto, userId, isAdmin));
     }
 
     @DeleteMapping("/{id}")

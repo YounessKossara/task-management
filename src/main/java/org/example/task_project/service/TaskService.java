@@ -28,17 +28,20 @@ public class TaskService {
     }
 
     public List<TaskDto> getTasksByProject(Long projectId, TaskStatus statut, String requestedAssigneeId,
-            String currentUserId, boolean isAdmin) {
+            String currentUserId, boolean isAdmin, boolean isResponsable) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + projectId));
 
         String actualAssigneeId = requestedAssigneeId;
 
-        if (!isAdmin && (project.getResponsableKeycloakId() == null
-                || !project.getResponsableKeycloakId().equals(currentUserId))) {
-            // Un USER qui n'est pas responsable du projet ne peut voir QUE ses propres
-            // tâches.
-            actualAssigneeId = currentUserId;
+        if (!isAdmin) {
+            boolean isProjectResponsable = project.getResponsableKeycloakId() != null
+                    && project.getResponsableKeycloakId().equals(currentUserId);
+
+            if (!isProjectResponsable) {
+                // Si non admin et non responsable du projet, limite la vue à ses tâches
+                actualAssigneeId = currentUserId;
+            }
         }
 
         List<Task> tasks;
@@ -58,9 +61,17 @@ public class TaskService {
                 .toList();
     }
 
-    public TaskDto createTask(Long projectId, TaskDto taskDto) {
+    public TaskDto createTask(Long projectId, TaskDto taskDto, String currentUserId, boolean isAdmin) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + projectId));
+
+        boolean isProjectResponsable = project.getResponsableKeycloakId() != null
+                && project.getResponsableKeycloakId().equals(currentUserId);
+
+        if (!isAdmin && !isProjectResponsable) {
+            throw new AccessDeniedException(
+                    "Accès refusé : Seul le responsable du projet ou un Admin peut y créer une tâche.");
+        }
 
         if (taskDto.getAssigneeKeycloakId() != null
                 && taskDto.getAssigneeKeycloakId().equals(project.getResponsableKeycloakId())) {
@@ -78,9 +89,17 @@ public class TaskService {
         return taskMapper.toDto(saved);
     }
 
-    public TaskDto updateTask(Long id, TaskDto taskDto) {
+    public TaskDto updateTask(Long id, TaskDto taskDto, String currentUserId, boolean isAdmin) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+
+        boolean isProjectResponsable = task.getProject().getResponsableKeycloakId() != null
+                && task.getProject().getResponsableKeycloakId().equals(currentUserId);
+
+        if (!isAdmin && !isProjectResponsable) {
+            throw new AccessDeniedException(
+                    "Accès refusé : Seul le responsable du projet ou un Admin peut modifier une tâche.");
+        }
 
         if (taskDto.getAssigneeKeycloakId() != null
                 && taskDto.getAssigneeKeycloakId().equals(task.getProject().getResponsableKeycloakId())) {
@@ -123,9 +142,16 @@ public class TaskService {
         return taskMapper.toDto(saved);
     }
 
-    public void deleteTask(Long id) {
-        if (!taskRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Tâche non trouvée: " + id);
+    public void deleteTask(Long id, String currentUserId, boolean isAdmin) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+
+        boolean isProjectResponsable = task.getProject().getResponsableKeycloakId() != null
+                && task.getProject().getResponsableKeycloakId().equals(currentUserId);
+
+        if (!isAdmin && !isProjectResponsable) {
+            throw new AccessDeniedException(
+                    "Accès refusé : Seul le responsable du projet ou un Admin peut supprimer une tâche.");
         }
         taskRepository.deleteById(id);
     }

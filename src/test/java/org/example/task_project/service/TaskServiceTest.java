@@ -52,7 +52,7 @@ class TaskServiceTest {
         when(taskMapper.toDto(task2)).thenReturn(dto2);
 
         // When
-        List<TaskDto> result = taskService.getTasksByProject(1L, null, null, "admin-id", true);
+        List<TaskDto> result = taskService.getTasksByProject(1L, null, null, "admin-id", true, false);
 
         // Then
         assertEquals(2, result.size());
@@ -70,7 +70,7 @@ class TaskServiceTest {
         when(taskMapper.toDto(task)).thenReturn(dto);
 
         // When
-        List<TaskDto> result = taskService.getTasksByProject(1L, TaskStatus.TODO, null, "admin-id", true);
+        List<TaskDto> result = taskService.getTasksByProject(1L, TaskStatus.TODO, null, "admin-id", true, false);
 
         // Then
         assertEquals(1, result.size());
@@ -94,7 +94,7 @@ class TaskServiceTest {
         when(taskMapper.toDto(saved)).thenReturn(outputDto);
 
         // When
-        TaskDto result = taskService.createTask(1L, inputDto);
+        TaskDto result = taskService.createTask(1L, inputDto, "admin-id", true);
 
         // Then
         assertEquals("Nouvelle tâche", result.getTitre());
@@ -106,7 +106,7 @@ class TaskServiceTest {
         when(projectRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> {
-            taskService.createTask(999L, new TaskDto());
+            taskService.createTask(999L, new TaskDto(), "admin-id", true);
         });
     }
 
@@ -133,7 +133,7 @@ class TaskServiceTest {
         when(taskRepository.existsById(999L)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () -> {
-            taskService.deleteTask(999L);
+            taskService.deleteTask(999L, "admin-id", true);
         });
     }
 
@@ -196,7 +196,7 @@ class TaskServiceTest {
     void deleteTask_shouldDelete_whenExists() {
         when(taskRepository.existsById(1L)).thenReturn(true);
 
-        taskService.deleteTask(1L);
+        taskService.deleteTask(1L, "admin-id", true);
 
         verify(taskRepository, times(1)).deleteById(1L);
     }
@@ -216,7 +216,7 @@ class TaskServiceTest {
         when(taskMapper.toDto(saved)).thenReturn(outputDto);
 
         // When
-        TaskDto result = taskService.updateTask(1L, updateDto);
+        TaskDto result = taskService.updateTask(1L, updateDto, "admin-id", true);
 
         // Then
         assertEquals("Nouvelle", result.getTitre());

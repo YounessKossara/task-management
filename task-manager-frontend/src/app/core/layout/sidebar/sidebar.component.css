@@ -1,0 +1,9 @@
+.hover-profile:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.hover-profile {
+    transition: all 0.2s ease-in-out;
+}

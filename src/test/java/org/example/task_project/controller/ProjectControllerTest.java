@@ -9,8 +9,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,6 +27,9 @@ class ProjectControllerTest {
     @Mock
     private ProjectService projectService;
 
+    @Mock
+    private Authentication authentication;
+
     @InjectMocks
     private ProjectController projectController;
 
@@ -32,9 +38,13 @@ class ProjectControllerTest {
         List<ProjectDto> projects = Arrays.asList(
                 ProjectDto.builder().id(1L).nom("Projet A").build(),
                 ProjectDto.builder().id(2L).nom("Projet B").build());
-        when(projectService.getAllProjects()).thenReturn(projects);
+        when(projectService.getAllProjects(anyString(), anyBoolean(), anyBoolean())).thenReturn(projects);
 
-        ResponseEntity<List<ProjectDto>> response = projectController.getAllProjects();
+        when(authentication.getName()).thenReturn("user-id");
+        doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))).when(authentication)
+                .getAuthorities();
+
+        ResponseEntity<List<ProjectDto>> response = projectController.getAllProjects(authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(2, response.getBody().size());
@@ -67,9 +77,13 @@ class ProjectControllerTest {
     @Test
     void updateProject_shouldReturn200() {
         ProjectDto dto = ProjectDto.builder().id(1L).nom("Modifié").build();
-        when(projectService.updateProject(eq(1L), any(ProjectDto.class))).thenReturn(dto);
+        when(projectService.updateProject(eq(1L), any(ProjectDto.class), anyString(), anyBoolean())).thenReturn(dto);
 
-        ResponseEntity<ProjectDto> response = projectController.updateProject(1L, dto);
+        when(authentication.getName()).thenReturn("user-id");
+        doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
+                .getAuthorities();
+
+        ResponseEntity<ProjectDto> response = projectController.updateProject(1L, dto, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("Modifié", response.getBody().getNom());

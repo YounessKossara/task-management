@@ -90,7 +90,8 @@ public class KeycloakUserService {
                     getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(roleRep));
                 } catch (Exception e) {
                     System.err.println("Avertissement: Impossible d'assigner le rôle '" + userDto.getRole()
-                            + "' dans Keycloak. Veuillez vérifier les permissions du client admin-cli (manage-users, view-users). L'utilisateur est créé localement avec ce rôle.");
+                            + "' dans Keycloak. Erreur exacte: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
 
@@ -139,11 +140,16 @@ public class KeycloakUserService {
                     RoleRepresentation oldRole = keycloak.realm(realm).roles().get(user.getRole()).toRepresentation();
                     getUsersResource().get(keycloakId).roles().realmLevel().remove(Collections.singletonList(oldRole));
                 } catch (Exception e) {
+                    System.err.println("Erreur suppression ancien rôle: " + e.getMessage());
                 }
             }
             // Add new role
-            RoleRepresentation newRole = keycloak.realm(realm).roles().get(userDto.getRole()).toRepresentation();
-            getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(newRole));
+            try {
+                RoleRepresentation newRole = keycloak.realm(realm).roles().get(userDto.getRole()).toRepresentation();
+                getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(newRole));
+            } catch (Exception e) {
+                System.err.println("Erreur assignation nouveau rôle: " + e.getMessage());
+            }
         }
 
         // 2. Mettre à jour en local

@@ -4,6 +4,7 @@ import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../core/models/user.model';
 import Keycloak from 'keycloak-js';
 import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
     selector: 'app-user-management',
@@ -26,6 +27,7 @@ export class UserManagementComponent implements OnInit {
     @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
     private keycloak = inject(Keycloak);
+    private toastService = inject(ToastService);
 
     constructor(
         private userService: UserService
@@ -68,26 +70,34 @@ export class UserManagementComponent implements OnInit {
             });
         } else {
             if (!this.password) {
-                alert("Mot de passe obligatoire pour la création.");
+                this.toastService.showError("Mot de passe obligatoire pour la création.");
                 return;
             }
-            this.userService.createUser(this.currentUser as User, this.password).subscribe(createdUser => {
-                if (this.selectedFileForCreation && createdUser.keycloakId) {
-                    this.userService.uploadIdentityDoc(createdUser.keycloakId, this.selectedFileForCreation).subscribe({
-                        next: () => {
-                            this.loadUsers();
-                            this.closeModal();
-                        },
-                        error: (err) => {
-                            alert("Utilisateur créé, mais erreur lors de l'upload du document.");
-                            console.error(err);
-                            this.loadUsers();
-                            this.closeModal();
-                        }
-                    });
-                } else {
-                    this.loadUsers();
-                    this.closeModal();
+            this.userService.createUser(this.currentUser as User, this.password).subscribe({
+                next: (createdUser) => {
+                    this.toastService.showSuccess(`Utilisateur ${createdUser.prenom} créé avec succès !`);
+                    if (this.selectedFileForCreation && createdUser.keycloakId) {
+                        this.userService.uploadIdentityDoc(createdUser.keycloakId, this.selectedFileForCreation).subscribe({
+                            next: () => {
+                                this.toastService.showSuccess("Document d'identité uploadé avec succès !");
+                                this.loadUsers();
+                                this.closeModal();
+                            },
+                            error: (err) => {
+                                this.toastService.showError("L'utilisateur a été créé, mais l'upload du document a échoué.");
+                                console.error(err);
+                                this.loadUsers();
+                                this.closeModal();
+                            }
+                        });
+                    } else {
+                        this.loadUsers();
+                        this.closeModal();
+                    }
+                },
+                error: (err) => {
+                    this.toastService.showError("Erreur lors de la création de l'utilisateur. Conflit d'email/username ?");
+                    console.error(err);
                 }
             });
         }
@@ -115,12 +125,12 @@ export class UserManagementComponent implements OnInit {
                 // Handling file select for existing user from table
                 this.userService.uploadIdentityDoc(this.selectedUserIdForUpload, file).subscribe({
                     next: () => {
-                        alert("Document uploadé avec succès !");
+                        this.toastService.showSuccess("Document d'identité uploadé avec succès !");
                         this.loadUsers();
                         input.value = ''; // Reset file input
                     },
                     error: (err) => {
-                        alert("Erreur lors de l'upload du document.");
+                        this.toastService.showError("Erreur lors de l'upload du document d'identité.");
                         console.error(err);
                     }
                 });

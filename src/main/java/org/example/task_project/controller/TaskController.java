@@ -23,7 +23,7 @@ public class TaskController {
     }
 
     @GetMapping("/projects/{projectId}/tasks")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE', 'USER')")
     public ResponseEntity<List<TaskDto>> getTasksByProject(
             @PathVariable Long projectId,
             @RequestParam(required = false) TaskStatus statut,
@@ -31,43 +31,54 @@ public class TaskController {
             Authentication authentication) {
         String currentUserId = authentication != null ? authentication.getName() : null;
         boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(role -> role.equals("ROLE_ADMIN"));
+                .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
+        boolean isResponsable = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(role -> role.getAuthority().equals("ROLE_RESPONSABLE"));
+
         return ResponseEntity
-                .ok(taskService.getTasksByProject(projectId, statut, assigneeKeycloakId, currentUserId, isAdmin));
+                .ok(taskService.getTasksByProject(projectId, statut, assigneeKeycloakId, currentUserId, isAdmin,
+                        isResponsable));
     }
 
     @PostMapping("/projects/{projectId}/tasks")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE')")
     public ResponseEntity<TaskDto> createTask(@PathVariable Long projectId,
-            @Valid @RequestBody TaskDto taskDto) {
-        TaskDto created = taskService.createTask(projectId, taskDto);
+            @Valid @RequestBody TaskDto taskDto, Authentication authentication) {
+        String currentUserId = authentication != null ? authentication.getName() : null;
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
+        TaskDto created = taskService.createTask(projectId, taskDto, currentUserId, isAdmin);
         return ResponseEntity.status(201).body(created);
     }
 
     @PutMapping("/tasks/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE')")
     public ResponseEntity<TaskDto> updateTask(@PathVariable Long id,
-            @Valid @RequestBody TaskDto taskDto) {
-        return ResponseEntity.ok(taskService.updateTask(id, taskDto));
+            @Valid @RequestBody TaskDto taskDto, Authentication authentication) {
+        String currentUserId = authentication != null ? authentication.getName() : null;
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(taskService.updateTask(id, taskDto, currentUserId, isAdmin));
     }
 
     @PatchMapping("/tasks/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE', 'USER')")
     public ResponseEntity<TaskDto> updateTaskStatus(@PathVariable Long id,
             @RequestParam TaskStatus statut,
             Authentication authentication) {
         String currentUserId = authentication != null ? authentication.getName() : null;
         boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(role -> role.equals("ROLE_ADMIN"));
+                .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
         return ResponseEntity.ok(taskService.updateTaskStatus(id, statut, currentUserId, isAdmin));
     }
 
     @DeleteMapping("/tasks/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        taskService.deleteTask(id);
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE')")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id, Authentication authentication) {
+        String currentUserId = authentication != null ? authentication.getName() : null;
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
+        taskService.deleteTask(id, currentUserId, isAdmin);
         return ResponseEntity.noContent().build();
     }
 }

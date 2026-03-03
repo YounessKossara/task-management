@@ -21,9 +21,17 @@ public class ProjectService {
         this.projectMapper = projectMapper;
     }
 
-    public List<ProjectDto> getAllProjects() {
-        return projectRepository.findAll()
-                .stream()
+    public List<ProjectDto> getAllProjects(String keycloakId, boolean isAdmin, boolean isResponsable) {
+        List<Project> projects;
+        if (isAdmin) {
+            projects = projectRepository.findAll();
+        } else if (isResponsable) {
+            projects = projectRepository.findByResponsableKeycloakId(keycloakId);
+        } else {
+            projects = projectRepository.findProjectsByAssigneeKeycloakId(keycloakId);
+        }
+
+        return projects.stream()
                 .map(projectMapper::toDto)
                 .toList();
     }
@@ -42,9 +50,14 @@ public class ProjectService {
         return projectMapper.toDto(saved);
     }
 
-    public ProjectDto updateProject(Long id, ProjectDto projectDto) {
+    public ProjectDto updateProject(Long id, ProjectDto projectDto, String keycloakId, boolean isAdmin) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + id));
+
+        // Security check
+        if (!isAdmin && !keycloakId.equals(project.getResponsableKeycloakId())) {
+            throw new RuntimeException("Accès refusé : Vous n'êtes pas le responsable de ce projet.");
+        }
 
         project.setNom(projectDto.getNom());
         project.setDescription(projectDto.getDescription());

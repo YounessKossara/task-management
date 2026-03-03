@@ -24,7 +24,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONSABLE')")
     public ResponseEntity<List<UserDto>> getAllUsers() {
         return ResponseEntity.ok(keycloakUserService.getAllUsers());
     }
