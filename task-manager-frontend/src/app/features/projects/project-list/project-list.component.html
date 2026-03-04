@@ -77,8 +77,8 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small text-uppercase">Description</label>
-                    <textarea class="form-control" rows="3" [(ngModel)]="currentProject.description"
-                        placeholder="Détails du projet..."></textarea>
+                    <textarea class="form-control" rows="3" [(ngModel)]="currentProject.description" maxlength="150"
+                        placeholder="Extrait (max 150 caractères)..."></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small text-uppercase">Date de début *</label>
@@ -86,7 +86,11 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small text-uppercase">Date de fin</label>
-                    <input type="date" class="form-control" [(ngModel)]="currentProject.dateFin">
+                    <input type="date" class="form-control" [(ngModel)]="currentProject.dateFin"
+                        [min]="currentProject.dateDebut">
+                    <div *ngIf="isProjectDatesInvalid()" class="text-danger small mt-1">
+                        La date de fin ne peut pas être inférieure à la date de début.
+                    </div>
                 </div>
                 <div class="mb-3" *ngIf="isAdmin">
                     <label class="form-label text-muted fw-bold small text-uppercase">Responsable du projet</label>
@@ -100,7 +104,7 @@
             <div class="modal-footer border-top-0 bg-light">
                 <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
                 <button type="button" class="btn btn-primary px-4" (click)="saveProject()"
-                    [disabled]="!currentProject.nom || !currentProject.dateDebut">
+                    [disabled]="!currentProject.nom || !currentProject.dateDebut || isProjectDatesInvalid()">
                     {{ isEditing ? 'D\'accord' : 'Créer le projet' }}
                 </button>
             </div>

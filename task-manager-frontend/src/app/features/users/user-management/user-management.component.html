@@ -117,7 +117,11 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small">DATE DE NAISSANCE</label>
-                    <input type="date" class="form-control" [(ngModel)]="currentUser.dateNaissance">
+                    <input type="date" class="form-control" [(ngModel)]="currentUser.dateNaissance"
+                        [max]="getTodayDate()" [min]="getMinBirthDate()">
+                    <div *ngIf="isBirthDateInvalid()" class="text-danger small mt-1">
+                        La date de naissance doit être valide et passée.
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold small">RÔLE</label>
@@ -141,7 +145,7 @@
             <div class="modal-footer border-top-0 bg-light">
                 <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
                 <button type="button" class="btn btn-primary px-4" (click)="saveUser()"
-                    [disabled]="!currentUser.nom || !currentUser.email || (emailInput.invalid && emailInput.touched)">
+                    [disabled]="!currentUser.nom || !currentUser.email || (emailInput.invalid && emailInput.touched) || isBirthDateInvalid()">
                     {{ isEditing ? 'Enregistrer' : 'Créer Compte' }}
                 </button>
             </div>

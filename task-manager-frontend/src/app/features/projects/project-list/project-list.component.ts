@@ -108,4 +108,9 @@ export class ProjectListComponent implements OnInit {
         const user = this.users.find(u => u.keycloakId === keycloakId);
         return user ? `${user.prenom} ${user.nom}` : 'Inconnu';
     }
+
+    isProjectDatesInvalid(): boolean {
+        if (!this.currentProject.dateDebut || !this.currentProject.dateFin) return false;
+        return new Date(this.currentProject.dateFin) < new Date(this.currentProject.dateDebut);
+    }
 }

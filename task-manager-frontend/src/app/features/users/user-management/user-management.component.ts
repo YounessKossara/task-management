@@ -115,6 +115,7 @@ export class UserManagementComponent implements OnInit {
     }
 
     onFileSelected(event: Event) {
+        // [Existing file selection logic...]
         const input = event.target as HTMLInputElement;
         if (input.files && input.files.length > 0) {
             const file = input.files[0];
@@ -136,5 +137,24 @@ export class UserManagementComponent implements OnInit {
                 });
             }
         }
+    }
+
+    getTodayDate(): string {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    getMinBirthDate(): string {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 100);
+        return d.toISOString().split('T')[0];
+    }
+
+    isBirthDateInvalid(): boolean {
+        if (!this.currentUser.dateNaissance) return false;
+        const birthDate = new Date(this.currentUser.dateNaissance);
+        const today = new Date();
+        const minDate = new Date();
+        minDate.setFullYear(minDate.getFullYear() - 100);
+        return birthDate > today || birthDate < minDate;
     }
 }

@@ -41,9 +41,31 @@ public class KeycloakUserService {
         return keycloak.realm(realm).users();
     }
 
+    @Transactional
     public List<UserDto> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
+        // 1. Fetch all users currently in Keycloak
+        List<UserRepresentation> keycloakUsers = getUsersResource().list();
+        List<String> keycloakIds = keycloakUsers.stream()
+                .map(UserRepresentation::getId)
+                .toList();
+
+        // 2. Fetch all local users
+        List<User> localUsers = userRepository.findAll();
+
+        // 3. Find missing users and delete them locally
+        List<User> usersToDelete = localUsers.stream()
+                .filter(u -> !keycloakIds.contains(u.getKeycloakId()))
+                .toList();
+
+        if (!usersToDelete.isEmpty()) {
+            userRepository.deleteAll(usersToDelete);
+            localUsers.removeAll(usersToDelete);
+            System.out.println("Synchronisation Keycloak: " + usersToDelete.size()
+                    + " utilisateurs locaux supprimés car absents de Keycloak.");
+        }
+
+        // 4. Return the updated list
+        return localUsers.stream()
                 .map(userMapper::toDto)
                 .toList();
     }
