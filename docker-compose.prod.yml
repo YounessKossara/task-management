@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: taskmanager-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: taskmanager-keycloak-prod
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak-theme:/opt/keycloak/themes
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: taskmanager-rustfs-prod
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - RUSTFS_VOLUMES=/data/rustfs{0...3}
+      - RUSTFS_ADDRESS=0.0.0.0:9000
+      - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}
+    volumes:
+      - rustfs_data_prod_0:/data/rustfs0
+    depends_on:
+      - volume-permission-helper-prod
+    restart: unless-stopped
+
+  volume-permission-helper-prod:
+    image: alpine
+    container_name: taskmanager-volume-helper-prod
+    volumes:
+      - rustfs_data_prod_0:/data0
+    command: sh -c "chown -R 10001:10001 /data0 && exit 0"
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskmanager-backend-prod
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      # Communication interne Docker
+      - KEYCLOAK_REALM=task-manager
+      - KEYCLOAK_URL=http://keycloak:8080   
+      - MINIO_URL=http://rustfs:9000
+      - MINIO_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${RUSTFS_SECRET_KEY}
+    depends_on:
+      - postgres
+      - keycloak
+      - rustfs
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./task-manager-frontend
+      dockerfile: Dockerfile
+    container_name: taskmanager-frontend-prod
+    ports:
+      - "80:80"    # Le front sera sur le port 80 (standard HTTP)
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data_prod:
+  rustfs_data_prod_0:
