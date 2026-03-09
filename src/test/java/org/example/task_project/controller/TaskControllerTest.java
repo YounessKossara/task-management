@@ -37,16 +37,15 @@ class TaskControllerTest {
         @Test
         void getTasksByProject_shouldReturnTasks() {
                 List<TaskDto> tasks = Arrays.asList(
-                                TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build(),
-                                TaskDto.builder().id(2L).titre("Tâche 2").statut(TaskStatus.DONE).build());
-                when(taskService.getTasksByProject(1L, null, null, "admin-id", true, false)).thenReturn(tasks);
+                        TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build(),
+                        TaskDto.builder().id(2L).titre("Tâche 2").statut(TaskStatus.DONE).build());
 
+                // Corrigé : 5 paramètres
+                when(taskService.getTasksByProject(1L, null, null, "admin-id", true)).thenReturn(tasks);
                 when(authentication.getName()).thenReturn("admin-id");
-                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
-                                .getAuthorities();
+                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication).getAuthorities();
 
-                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, null, null,
-                                authentication);
+                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, null, null, authentication);
 
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(2, response.getBody().size());
@@ -54,17 +53,14 @@ class TaskControllerTest {
 
         @Test
         void getTasksByProject_withStatusFilter() {
-                List<TaskDto> tasks = List.of(
-                                TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build());
-                when(taskService.getTasksByProject(1L, TaskStatus.TODO, null, "admin-id", true, false))
-                                .thenReturn(tasks);
+                List<TaskDto> tasks = List.of(TaskDto.builder().id(1L).titre("Tâche 1").statut(TaskStatus.TODO).build());
 
+                // Corrigé : 5 paramètres
+                when(taskService.getTasksByProject(1L, TaskStatus.TODO, null, "admin-id", true)).thenReturn(tasks);
                 when(authentication.getName()).thenReturn("admin-id");
-                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
-                                .getAuthorities();
+                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication).getAuthorities();
 
-                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, TaskStatus.TODO, null,
-                                authentication);
+                ResponseEntity<List<TaskDto>> response = taskController.getTasksByProject(1L, TaskStatus.TODO, null, authentication);
 
                 assertEquals(1, response.getBody().size());
                 assertEquals(TaskStatus.TODO, response.getBody().get(0).getStatut());
@@ -74,12 +70,10 @@ class TaskControllerTest {
         void createTask_shouldReturn201() {
                 TaskDto inputDto = TaskDto.builder().titre("Nouvelle").priorite(TaskPriority.HAUTE).build();
                 TaskDto outputDto = TaskDto.builder().id(1L).titre("Nouvelle").statut(TaskStatus.TODO).build();
-                when(taskService.createTask(eq(1L), any(TaskDto.class), anyString(), anyBoolean()))
-                                .thenReturn(outputDto);
 
+                when(taskService.createTask(eq(1L), any(TaskDto.class), anyString(), anyBoolean())).thenReturn(outputDto);
                 when(authentication.getName()).thenReturn("admin-id");
-                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
-                                .getAuthorities();
+                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication).getAuthorities();
 
                 ResponseEntity<TaskDto> response = taskController.createTask(1L, inputDto, authentication);
 
@@ -93,8 +87,7 @@ class TaskControllerTest {
                 when(taskService.updateTask(eq(1L), any(TaskDto.class), anyString(), anyBoolean())).thenReturn(dto);
 
                 when(authentication.getName()).thenReturn("admin-id");
-                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
-                                .getAuthorities();
+                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication).getAuthorities();
 
                 ResponseEntity<TaskDto> response = taskController.updateTask(1L, dto, authentication);
 
@@ -105,12 +98,10 @@ class TaskControllerTest {
         @Test
         void updateTaskStatus_shouldReturn200() {
                 TaskDto dto = TaskDto.builder().id(1L).statut(TaskStatus.DONE).build();
-                when(taskService.updateTaskStatus(eq(1L), eq(TaskStatus.DONE), anyString(), anyBoolean()))
-                                .thenReturn(dto);
+                when(taskService.updateTaskStatus(eq(1L), eq(TaskStatus.DONE), anyString(), anyBoolean())).thenReturn(dto);
 
                 when(authentication.getName()).thenReturn("admin-id");
-                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
-                                .getAuthorities();
+                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication).getAuthorities();
 
                 ResponseEntity<TaskDto> response = taskController.updateTaskStatus(1L, TaskStatus.DONE, authentication);
 
@@ -120,10 +111,8 @@ class TaskControllerTest {
         @Test
         void deleteTask_shouldReturn204() {
                 doNothing().when(taskService).deleteTask(eq(1L), anyString(), anyBoolean());
-
                 when(authentication.getName()).thenReturn("admin-id");
-                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
-                                .getAuthorities();
+                doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication).getAuthorities();
 
                 ResponseEntity<Void> response = taskController.deleteTask(1L, authentication);
 

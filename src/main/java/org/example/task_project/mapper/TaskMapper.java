@@ -4,9 +4,8 @@ import org.example.task_project.dto.TaskDto;
 import org.example.task_project.entity.Task;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface TaskMapper {
 
     @Mapping(target = "projectId", expression = "java(task.getProject() != null ? task.getProject().getId() : null)")

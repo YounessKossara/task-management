@@ -32,9 +32,17 @@ class UserControllerTest {
 
         @Test
         void getAllUsers_shouldReturnList() {
-                List<UserDto> users = Arrays.asList(
-                                UserDto.builder().keycloakId("id1").nom("Nom1").role("ADMIN").build(),
-                                UserDto.builder().keycloakId("id2").nom("Nom2").role("USER").build());
+                UserDto dto1 = new UserDto();
+                dto1.setKeycloakId("id1");
+                dto1.setNom("Nom1");
+                dto1.setRole("ADMIN");
+
+                UserDto dto2 = new UserDto();
+                dto2.setKeycloakId("id2");
+                dto2.setNom("Nom2");
+                dto2.setRole("USER");
+
+                List<UserDto> users = Arrays.asList(dto1, dto2);
                 when(keycloakUserService.getAllUsers()).thenReturn(users);
 
                 ResponseEntity<List<UserDto>> response = userController.getAllUsers();

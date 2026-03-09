@@ -1,39 +1,41 @@
 package org.example.task_project.service;
 
 import org.example.task_project.dto.UserDto;
-import org.example.task_project.entity.User;
 import org.example.task_project.exception.KeycloakException;
 import org.example.task_project.exception.ResourceNotFoundException;
 import org.example.task_project.mapper.UserMapper;
-import org.example.task_project.repository.UserRepository;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.ws.rs.core.Response;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class KeycloakUserService {
 
+    private static final Logger log = LoggerFactory.getLogger(KeycloakUserService.class);
+
     private final Keycloak keycloak;
-    private final UserRepository userRepository;
     private final UserMapper userMapper;
 
     @Value("${keycloak.realm}")
     private String realm;
 
-    public KeycloakUserService(Keycloak keycloak, UserRepository userRepository, UserMapper userMapper) {
+    public KeycloakUserService(Keycloak keycloak, UserMapper userMapper) {
         this.keycloak = keycloak;
-        this.userRepository = userRepository;
         this.userMapper = userMapper;
     }
 
@@ -41,44 +43,29 @@ public class KeycloakUserService {
         return keycloak.realm(realm).users();
     }
 
-    @Transactional
     public List<UserDto> getAllUsers() {
-        // 1. Fetch all users currently in Keycloak
-        List<UserRepresentation> keycloakUsers = getUsersResource().list();
-        List<String> keycloakIds = keycloakUsers.stream()
-                .map(UserRepresentation::getId)
-                .toList();
-
-        // 2. Fetch all local users
-        List<User> localUsers = userRepository.findAll();
-
-        // 3. Find missing users and delete them locally
-        List<User> usersToDelete = localUsers.stream()
-                .filter(u -> !keycloakIds.contains(u.getKeycloakId()))
-                .toList();
-
-        if (!usersToDelete.isEmpty()) {
-            userRepository.deleteAll(usersToDelete);
-            localUsers.removeAll(usersToDelete);
-            System.out.println("Synchronisation Keycloak: " + usersToDelete.size()
-                    + " utilisateurs locaux supprimés car absents de Keycloak.");
+        try {
+            List<UserRepresentation> keycloakUsers = getUsersResource().list();
+            return keycloakUsers.stream()
+                    .map(userMapper::toDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new KeycloakException("Failed to fetch users from Keycloak: " + e.getMessage());
         }
-
-        // 4. Return the updated list
-        return localUsers.stream()
-                .map(userMapper::toDto)
-                .toList();
     }
 
     public UserDto getUserById(String keycloakId) {
-        User user = userRepository.findById(keycloakId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId));
-        return userMapper.toDto(user);
+        try {
+            UserRepresentation keycloakUser = getUsersResource().get(keycloakId).toRepresentation();
+            return userMapper.toDto(keycloakUser);
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            throw new ResourceNotFoundException("Utilisateur non trouvé dans Keycloak: " + keycloakId);
+        } catch (Exception e) {
+            throw new KeycloakException("Failed to fetch user from Keycloak: " + e.getMessage());
+        }
     }
 
-    @Transactional
     public UserDto createUser(UserDto userDto, String password) {
-        // 1. Créer dans Keycloak
         UserRepresentation keycloakUser = new UserRepresentation();
         keycloakUser.setUsername(userDto.getEmail());
         keycloakUser.setEmail(userDto.getEmail());
@@ -87,6 +74,16 @@ public class KeycloakUserService {
         keycloakUser.setEnabled(true);
         keycloakUser.setEmailVerified(true);
 
+        // Custom Attributes
+        Map<String, List<String>> attributes = new HashMap<>();
+        if (userDto.getTelephone() != null)
+            attributes.put("telephone", Collections.singletonList(userDto.getTelephone()));
+        if (userDto.getDateNaissance() != null)
+            attributes.put("dateNaissance", Collections.singletonList(userDto.getDateNaissance().toString()));
+        if (userDto.getRole() != null)
+            attributes.put("role", Collections.singletonList(userDto.getRole()));
+        keycloakUser.setAttributes(attributes);
+
         CredentialRepresentation credential = new CredentialRepresentation();
         credential.setType(CredentialRepresentation.PASSWORD);
         credential.setValue(password);
@@ -94,134 +91,105 @@ public class KeycloakUserService {
         keycloakUser.setCredentials(Collections.singletonList(credential));
 
         try (Response response = getUsersResource().create(keycloakUser)) {
-
             if (response.getStatus() != 201) {
-                throw new KeycloakException("Erreur Keycloak: " + response.getStatusInfo().getReasonPhrase());
+                throw new KeycloakException(
+                        "Erreur Keycloak lors de la création: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            // 2. Récupérer l'ID Keycloak généré
-            String keycloakId = response.getLocation().getPath()
-                    .replaceAll(".*/([^/]+)$", "$1");
+            String keycloakId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
 
-            // Assign role to user if specified, handle gracefully if admin-client lacks
-            // permissions (403)
             if (userDto.getRole() != null) {
                 try {
                     RoleRepresentation roleRep = keycloak.realm(realm).roles().get(userDto.getRole())
                             .toRepresentation();
                     getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(roleRep));
                 } catch (Exception e) {
-                    System.err.println("Avertissement: Impossible d'assigner le rôle '" + userDto.getRole()
-                            + "' dans Keycloak. Erreur exacte: " + e.getMessage());
-                    e.printStackTrace();
+                    log.warn("Avertissement: Impossible d'assigner le rôle '{}'.", userDto.getRole());
                 }
             }
 
-            // 3. Sauvegarder en local
-            try {
-                User user = userMapper.toEntity(userDto);
-                user.setKeycloakId(keycloakId);
-                user.setCreatedAt(java.time.LocalDateTime.now());
-                user.setUpdatedAt(java.time.LocalDateTime.now());
-                userRepository.save(user);
-
-                userDto.setKeycloakId(keycloakId);
-                return userDto;
-            } catch (Exception e) {
-                // Si l'enregistrement en base de données échoue, on supprime l'utilisateur de
-                // Keycloak pour éviter les incohérences
-                try {
-                    getUsersResource().get(keycloakId).remove();
-                } catch (Exception deleteEx) {
-                    System.err.println(
-                            "Attention: Impossible de supprimer l'utilisateur Keycloak suite à une erreur locale.");
-                }
-                throw e; // Rethrow pour que l'API renvoie une erreur 500 propre et pas un "utilisteur
-                         // créé" partiel
-            }
+            return getUserById(keycloakId);
         }
     }
 
-    @Transactional
     public UserDto updateUser(String keycloakId, UserDto userDto) {
-        User user = userRepository.findById(keycloakId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId));
+        try {
+            UserRepresentation keycloakUser = getUsersResource().get(keycloakId).toRepresentation();
 
-        // 1. Mettre à jour dans Keycloak
-        UserRepresentation keycloakUser = getUsersResource().get(keycloakId).toRepresentation();
-        keycloakUser.setFirstName(userDto.getPrenom());
-        keycloakUser.setLastName(userDto.getNom());
-        keycloakUser.setEmail(userDto.getEmail());
-        getUsersResource().get(keycloakId).update(keycloakUser);
+            keycloakUser.setFirstName(userDto.getPrenom());
+            keycloakUser.setLastName(userDto.getNom());
+            keycloakUser.setEmail(userDto.getEmail());
 
-        // Update role if changed
-        if (userDto.getRole() != null && !userDto.getRole().equals(user.getRole())) {
-            // Remove old role
-            if (user.getRole() != null) {
+            Map<String, List<String>> attributes = keycloakUser.getAttributes();
+            if (attributes == null)
+                attributes = new HashMap<>();
+
+            if (userDto.getTelephone() != null)
+                attributes.put("telephone", Collections.singletonList(userDto.getTelephone()));
+            if (userDto.getDateNaissance() != null)
+                attributes.put("dateNaissance", Collections.singletonList(userDto.getDateNaissance().toString()));
+
+            String oldRole = null;
+            if (attributes.containsKey("role") && !attributes.get("role").isEmpty()) {
+                oldRole = attributes.get("role").get(0);
+            }
+
+            if (userDto.getRole() != null)
+                attributes.put("role", Collections.singletonList(userDto.getRole()));
+
+            keycloakUser.setAttributes(attributes);
+            getUsersResource().get(keycloakId).update(keycloakUser);
+
+            // Update role if changed
+            if (userDto.getRole() != null && !userDto.getRole().equals(oldRole)) {
+                if (oldRole != null) {
+                    try {
+                        RoleRepresentation oldRoleRep = keycloak.realm(realm).roles().get(oldRole).toRepresentation();
+                        getUsersResource().get(keycloakId).roles().realmLevel()
+                                .remove(Collections.singletonList(oldRoleRep));
+                    } catch (Exception e) {
+                        log.error("Erreur suppression ancien rôle: {}", e.getMessage());
+                    }
+                }
                 try {
-                    RoleRepresentation oldRole = keycloak.realm(realm).roles().get(user.getRole()).toRepresentation();
-                    getUsersResource().get(keycloakId).roles().realmLevel().remove(Collections.singletonList(oldRole));
+                    RoleRepresentation newRoleRep = keycloak.realm(realm).roles().get(userDto.getRole())
+                            .toRepresentation();
+                    getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(newRoleRep));
                 } catch (Exception e) {
-                    System.err.println("Erreur suppression ancien rôle: " + e.getMessage());
+                    log.error("Erreur assignation nouveau rôle: {}", e.getMessage());
                 }
             }
-            // Add new role
-            try {
-                RoleRepresentation newRole = keycloak.realm(realm).roles().get(userDto.getRole()).toRepresentation();
-                getUsersResource().get(keycloakId).roles().realmLevel().add(Collections.singletonList(newRole));
-            } catch (Exception e) {
-                System.err.println("Erreur assignation nouveau rôle: " + e.getMessage());
-            }
-        }
 
-        // 2. Mettre à jour en local
-        user.setNom(userDto.getNom());
-        user.setPrenom(userDto.getPrenom());
-        user.setEmail(userDto.getEmail());
-        user.setTelephone(userDto.getTelephone());
-        user.setDateNaissance(userDto.getDateNaissance());
-        user.setRole(userDto.getRole());
-        user.setUpdatedAt(java.time.LocalDateTime.now());
-        userRepository.save(user);
-
-        return userMapper.toDto(user);
-    }
-
-    @Transactional
-    public void deleteUser(String keycloakId) {
-        if (!userRepository.existsById(keycloakId)) {
+            return getUserById(keycloakId);
+        } catch (jakarta.ws.rs.NotFoundException e) {
             throw new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId);
         }
+    }
 
-        // 1. Supprimer en local d'abord (Transactional SQL)
-        userRepository.deleteById(keycloakId);
-
-        // 2. Supprimer de Keycloak
+    public void deleteUser(String keycloakId) {
         try {
             getUsersResource().get(keycloakId).remove();
         } catch (jakarta.ws.rs.NotFoundException e) {
-            System.out
-                    .println("Utilisateur " + keycloakId + " non trouvé dans Keycloak. Suppression locale finalisée.");
+            throw new ResourceNotFoundException("Utilisateur non trouvé dans Keycloak: " + keycloakId);
         } catch (Exception e) {
-            if (e.getMessage() != null && e.getMessage().contains("404")) {
-                System.out.println(
-                        "Erreur 404 capturée pour l'utilisateur " + keycloakId + ". Suppression locale finalisée.");
-            } else {
-                // Si Keycloak échoue (autre que 404), on lève une exception pour rollback la
-                // transaction SQL
-                throw new KeycloakException(
-                        "Impossible de supprimer l'utilisateur dans Keycloak: " + e.getMessage()
-                                + ". Annulation locale.");
-            }
+            throw new KeycloakException("Impossible de supprimer l'utilisateur dans Keycloak: " + e.getMessage());
         }
     }
 
-    @Transactional
     public void updateIdentityDocUrl(String keycloakId, String url) {
-        User user = userRepository.findById(keycloakId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId));
-        user.setIdentityDocUrl(url);
-        user.setUpdatedAt(java.time.LocalDateTime.now());
-        userRepository.save(user);
+        try {
+            UserRepresentation keycloakUser = getUsersResource().get(keycloakId).toRepresentation();
+
+            Map<String, List<String>> attributes = keycloakUser.getAttributes();
+            if (attributes == null)
+                attributes = new HashMap<>();
+
+            attributes.put("identityDocUrl", Collections.singletonList(url));
+            keycloakUser.setAttributes(attributes);
+
+            getUsersResource().get(keycloakId).update(keycloakUser);
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            throw new ResourceNotFoundException("Utilisateur non trouvé: " + keycloakId);
+        }
     }
 }

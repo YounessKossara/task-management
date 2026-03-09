@@ -118,7 +118,8 @@ class ProjectServiceTest {
     @Test
     void updateProject_shouldUpdateAndReturnDto() {
         // Given
-        Project existing = Project.builder().id(1L).nom("Ancien").description("Ancienne desc").build();
+        Project existing = Project.builder().id(1L).responsableKeycloakId("resp-id").nom("Ancien")
+                .description("Ancienne desc").build();
         ProjectDto updateDto = ProjectDto.builder().nom("Nouveau").description("Nouvelle desc")
                 .dateDebut(LocalDate.of(2026, 3, 1)).dateFin(LocalDate.of(2026, 6, 30))
                 .responsableKeycloakId("resp-id").build();

@@ -4,7 +4,7 @@ import org.example.task_project.dto.ProjectDto;
 import org.example.task_project.entity.Project;
 import org.mapstruct.Mapper;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface ProjectMapper {
 
     ProjectDto toDto(Project project);

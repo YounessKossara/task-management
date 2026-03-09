@@ -137,18 +137,17 @@
                         accept=".pdf,.png,.jpg,.jpeg">
                 </div>
                 <div class="mb-3" *ngIf="!isEditing">
-                    <label class="form-label text-muted fw-bold small">MOT DE PASSE TEMPORAIRE *</label>
+                    <label class="form-label text-muted fw-bold small">MOT DE PASSE *</label>
                     <input type="password" class="form-control" [(ngModel)]="password">
-                    <div class="form-text">L'utilisateur devra le changer à la 1ère connexion.</div>
-                </div>
-            </div>
-            <div class="modal-footer border-top-0 bg-light">
-                <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
-                <button type="button" class="btn btn-primary px-4" (click)="saveUser()"
-                    [disabled]="!currentUser.nom || !currentUser.email || (emailInput.invalid && emailInput.touched) || isBirthDateInvalid()">
-                    {{ isEditing ? 'Enregistrer' : 'Créer Compte' }}
-                </button>
-            </div>
-        </div>
-    </div>
+              </div>
+          </div>
+          <div class="modal-footer border-top-0 bg-light">
+              <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
+              <button type="button" class="btn btn-primary px-4" (click)="saveUser()"
+                  [disabled]="!currentUser.nom || !currentUser.email || (emailInput.invalid && emailInput.touched) || isBirthDateInvalid()">
+                  {{ isEditing ? 'Enregistrer' : 'Créer Compte' }}
+              </button>
+          </div>
+      </div>
+  </div>
 </div>

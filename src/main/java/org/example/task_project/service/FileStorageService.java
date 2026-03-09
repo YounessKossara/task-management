@@ -1,6 +1,9 @@
 package org.example.task_project.service;
 
-import io.minio.*;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import org.example.task_project.exception.FileStorageException;
 import org.springframework.beans.factory.annotation.Value;

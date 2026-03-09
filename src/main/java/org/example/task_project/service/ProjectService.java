@@ -2,6 +2,7 @@ package org.example.task_project.service;
 
 import org.example.task_project.dto.ProjectDto;
 import org.example.task_project.entity.Project;
+import org.example.task_project.exception.AccessDeniedException;
 import org.example.task_project.exception.ResourceNotFoundException;
 import org.example.task_project.mapper.ProjectMapper;
 import org.example.task_project.repository.ProjectRepository;
@@ -12,6 +13,8 @@ import java.util.List;
 
 @Service
 public class ProjectService {
+
+    private static final String PROJET_NON_TROUVE = "Projet non trouvé: ";
 
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
@@ -38,7 +41,7 @@ public class ProjectService {
 
     public ProjectDto getProjectById(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PROJET_NON_TROUVE + id));
         return projectMapper.toDto(project);
     }
 
@@ -52,11 +55,11 @@ public class ProjectService {
 
     public ProjectDto updateProject(Long id, ProjectDto projectDto, String keycloakId, boolean isAdmin) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PROJET_NON_TROUVE + id));
 
         // Security check
         if (!isAdmin && !keycloakId.equals(project.getResponsableKeycloakId())) {
-            throw new RuntimeException("Accès refusé : Vous n'êtes pas le responsable de ce projet.");
+            throw new AccessDeniedException("Accès refusé : Vous n'êtes pas le responsable de ce projet.");
         }
 
         project.setNom(projectDto.getNom());
@@ -72,7 +75,7 @@ public class ProjectService {
 
     public void deleteProject(Long id) {
         if (!projectRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Projet non trouvé: " + id);
+            throw new ResourceNotFoundException(PROJET_NON_TROUVE + id);
         }
         projectRepository.deleteById(id);
     }

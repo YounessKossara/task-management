@@ -28,6 +28,15 @@
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.build.directory}/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.exclusions>
+            **/config/**,
+            **/entity/**,
+            **/dto/**,
+            **/mapper/**,
+            **/enums/**,
+            **/exception/**,
+            **/TaskProjectApplication.java
+        </sonar.coverage.exclusions>
         <sonar.host.url>http://localhost:9090</sonar.host.url>
 
     </properties>

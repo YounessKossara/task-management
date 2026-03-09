@@ -17,6 +17,8 @@ import java.util.List;
 @Service
 public class TaskService {
 
+    private static final String TACHE_NON_TROUVEE = "Tâche non trouvée: ";
+
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final TaskMapper taskMapper;
@@ -28,7 +30,7 @@ public class TaskService {
     }
 
     public List<TaskDto> getTasksByProject(Long projectId, TaskStatus statut, String requestedAssigneeId,
-            String currentUserId, boolean isAdmin, boolean isResponsable) {
+            String currentUserId, boolean isAdmin) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projet non trouvé: " + projectId));
 
@@ -91,7 +93,7 @@ public class TaskService {
 
     public TaskDto updateTask(Long id, TaskDto taskDto, String currentUserId, boolean isAdmin) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(TACHE_NON_TROUVEE + id));
 
         boolean isProjectResponsable = task.getProject().getResponsableKeycloakId() != null
                 && task.getProject().getResponsableKeycloakId().equals(currentUserId);
@@ -120,7 +122,7 @@ public class TaskService {
 
     public TaskDto updateTaskStatus(Long id, TaskStatus newStatus, String currentUserId, boolean isAdmin) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(TACHE_NON_TROUVEE + id));
 
         // Vérifier l'autorisation : ADMIN, responsable du projet, ou assigné à la tâche
         if (!isAdmin) {
@@ -144,7 +146,7 @@ public class TaskService {
 
     public void deleteTask(Long id, String currentUserId, boolean isAdmin) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tâche non trouvée: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(TACHE_NON_TROUVEE + id));
 
         boolean isProjectResponsable = task.getProject().getResponsableKeycloakId() != null
                 && task.getProject().getResponsableKeycloakId().equals(currentUserId);
