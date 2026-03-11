@@ -21,6 +21,9 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: 84-8-223-8.nip.io
+      KC_HOSTNAME_STRICT_HTTPS: false
     ports:
       - "8180:8080"
     volumes:
@@ -70,7 +73,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       # Communication interne Docker
       - KEYCLOAK_REALM=task-manager
-      - KEYCLOAK_URL=http://keycloak:8080   
+      - KEYCLOAK_URL=https://84-8-223-8.nip.io
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - MINIO_URL=http://rustfs:9000
       - MINIO_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
       - MINIO_SECRET_KEY=${RUSTFS_SECRET_KEY}
