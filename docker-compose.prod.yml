@@ -75,7 +75,7 @@ services:
       - KEYCLOAK_REALM=task-manager
       - KEYCLOAK_URL=https://84-8-223-8.nip.io
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      - MINIO_URL=http://rustfs:9000
+      - MINIO_URL=https://storage.84-8-223-8.nip.io
       - MINIO_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
       - MINIO_SECRET_KEY=${RUSTFS_SECRET_KEY}
     depends_on:
@@ -83,18 +83,6 @@ services:
       - keycloak
       - rustfs
     restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./task-manager-frontend
-      dockerfile: Dockerfile
-    container_name: taskmanager-frontend-prod
-    ports:
-      - "80:80"    # Le front sera sur le port 80 (standard HTTP)
-    depends_on:
-      - backend
-    restart: unless-stopped
-
 volumes:
   postgres_data_prod:
   rustfs_data_prod_0:
