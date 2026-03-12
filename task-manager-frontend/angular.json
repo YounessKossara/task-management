@@ -55,7 +55,24 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
+            },
+            "cloud": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.cloud.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -68,6 +85,9 @@
             },
             "development": {
               "buildTarget": "task-manager-frontend:build:development"
+            },
+            "cloud": {
+              "buildTarget": "task-manager-frontend:build:cloud"
             }
           },
           "defaultConfiguration": "development"

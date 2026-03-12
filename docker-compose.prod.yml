@@ -39,7 +39,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      - RUSTFS_VOLUMES=/data/rustfs{0...3}
+      - RUSTFS_VOLUMES=/data/rustfs0
       - RUSTFS_ADDRESS=0.0.0.0:9000
       - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
       - RUSTFS_CONSOLE_ENABLE=true
@@ -56,7 +56,7 @@ services:
     container_name: taskmanager-volume-helper-prod
     volumes:
       - rustfs_data_prod_0:/data0
-    command: sh -c "chown -R 10001:10001 /data0 && exit 0"
+    command: sh -c "mkdir -p /data0 && chown -R 10001:10001 /data0 && exit 0"
     restart: "no"
 
   backend:

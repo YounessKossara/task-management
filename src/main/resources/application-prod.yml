@@ -1,0 +1,36 @@
+# Production profile - overrides for Docker environment
+logging:
+  level:
+    org.springframework.security: DEBUG
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    show-sql: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+
+rustfs:
+  url: ${MINIO_URL}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_URL}
+  realm: ${KEYCLOAK_REALM}
+  client-id: task-manager-api
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
+
+springdoc:
+  swagger-ui:
+    oauth:
+      clientId: task-manager-api
+      clientSecret: ${KEYCLOAK_CLIENT_SECRET}
